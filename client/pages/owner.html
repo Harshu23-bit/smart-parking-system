@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ParkSmart Space Owner Portal — Monetize your parking space. Register, list your space details, set real-time pricing, and manage bookings.">
+    <title>ParkSmart — Space Owner Portal &amp; Listing</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="owner.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="owner-page">
+
+    <!-- ==================== NAVBAR ==================== -->
+    <nav class="navbar scrolled" id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo" id="nav-logo">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#logoGradOwner)"/>
+                        <path d="M10 22V10h6a5 5 0 0 1 0 10h-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="22" cy="22" r="3" stroke="#fff" stroke-width="2"/>
+                        <defs>
+                            <linearGradient id="logoGradOwner" x1="0" y1="0" x2="32" y2="32">
+                                <stop stop-color="#1a2f5a"/>
+                                <stop offset="1" stop-color="#3b6cf5"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="logo-text">Park<span class="logo-highlight">Smart</span> <span style="font-size: 0.82rem; font-weight: 600; background: var(--navy-50); color: var(--navy-700); padding: 2px 8px; border-radius: 6px; margin-left: 6px; border: 1px solid var(--navy-200);">Owner Portal</span></span>
+            </a>
+
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html" class="nav-link">← Driver Homepage</a></li>
+                <li id="nav-item-auth"><a href="#auth-section" class="nav-link">Owner Login</a></li>
+                <li id="nav-item-apply"><a href="#apply-section" class="nav-link">List Your Space</a></li>
+                <li id="nav-item-dashboard" style="display: none;"><a href="owner-dashboard.html" class="nav-link" style="color: var(--accent); font-weight: 700;">Active Control Panel ⚡</a></li>
+            </ul>
+
+            <div class="nav-actions" id="nav-actions-container">
+                <a href="#auth-section" class="btn-ghost" id="btn-owner-nav-login">Sign In</a>
+                <a href="owner-dashboard.html" class="btn-primary" id="btn-owner-nav-dash" style="display: none;">Go to Dashboard →</a>
+                <div class="nav-owner-profile" id="nav-owner-profile" style="display: none;"></div>
+            </div>
+
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="owner-main">
+        <div class="owner-container">
+
+            <!-- WORKFLOW TRACKER (Reflecting Revised Flowchart) -->
+            <nav class="workflow-tracker" aria-label="Owner Onboarding Steps">
+                <div class="tracker-step active" id="tracker-step-1">
+                    <span class="step-badge" id="step-badge-1">1</span>
+                    <span>Owner Login / Register</span>
+                </div>
+                <div class="tracker-arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+                <div class="tracker-step" id="tracker-step-2">
+                    <span class="step-badge" id="step-badge-2">2</span>
+                    <span>Apply for Renting / Space Details</span>
+                </div>
+                <div class="tracker-arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+                <div class="tracker-step" id="tracker-step-3" style="opacity: 0.5;">
+                    <span class="step-badge" id="step-badge-3">🔒</span>
+                    <span id="tracker-step-3-text">Owner Dashboard (Control Panel)</span>
+                </div>
+            </nav>
+
+            <!-- OWNER HERO BANNER -->
+            <section class="owner-hero-banner">
+                <div class="owner-hero-content">
+                    <span class="owner-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        Space Monetization Suite
+                    </span>
+                    <h1 class="owner-hero-title">Turn Idle Parking Spaces Into Continuous Revenue</h1>
+                    <p class="owner-hero-desc">
+                        Register as an authorized space owner, submit your parking facility specifications with photo verification, and take full command through the live real-time Active Control Panel.
+                    </p>
+                    <div class="owner-quick-actions">
+                        <a href="#auth-section" class="btn-primary" id="hero-btn-action" style="padding: 12px 28px; font-size: 0.95rem;">
+                            Sign In to Start Listing ↓
+                        </a>
+                        <a href="owner-dashboard.html" class="btn-ghost" id="hero-btn-dash" style="display: none; background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); padding: 12px 24px;">
+                            Launch Active Control Panel ⚡
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SECTION 1: OWNER LOGIN / REGISTER ==================== -->
+            <section id="auth-section" class="auth-wrapper" aria-labelledby="auth-title">
+                <div class="auth-header">
+                    <h2 id="auth-title">Owner Access</h2>
+                    <p>Sign in to your owner console or register a new host account</p>
+                </div>
+
+                <div class="auth-toggle-pill" role="tablist">
+                    <button type="button" class="active" id="auth-tab-login" role="tab" aria-selected="true">Sign In</button>
+                    <button type="button" id="auth-tab-register" role="tab" aria-selected="false">Create Account</button>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <form id="owner-login-form">
+                    <div class="form-group">
+                        <label for="owner-login-email">Owner Email <span class="required">*</span></label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                            </span>
+                            <input type="email" id="owner-login-email" class="input-control" placeholder="owner@company.com" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label for="owner-login-password" style="margin-bottom: 0;">Password <span class="required">*</span></label>
+                            <a href="#" style="font-size: 0.8rem; color: var(--accent); font-weight: 600;">Forgot?</a>
+                        </div>
+                        <div class="input-with-icon">
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                            </span>
+                            <input type="password" id="owner-login-password" class="input-control" placeholder="••••••••" required autocomplete="current-password">
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px; font-size: 0.88rem; color: var(--gray-600);">
+                        <input type="checkbox" id="remember-me" checked style="accent-color: var(--accent); width: 16px; height: 16px;">
+                        <label for="remember-me" style="margin: 0; cursor: pointer;">Stay signed in on this browser</label>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="width: 100%; min-height: 48px; font-size: 1rem;">
+                        Sign In to Owner Portal →
+                    </button>
+
+                    <!-- QUICK DEMO PRESET -->
+                    <div class="demo-credentials-box">
+                        <div class="demo-text">
+                            <strong>Quick Evaluation:</strong> Pre-filled verified owner account
+                        </div>
+                        <button type="button" class="btn-demo-fill" id="btn-demo-credentials">Fill Demo</button>
+                    </div>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="owner-register-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="reg-name">Full Name / Business Entity <span class="required">*</span></label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </span>
+                            <input type="text" id="reg-name" class="input-control" placeholder="e.g. Alex Reynolds or Downtown Deck LLC" required autocomplete="name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-email">Business Email <span class="required">*</span></label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                            </span>
+                            <input type="email" id="reg-email" class="input-control" placeholder="alex@company.com" required autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-phone">Contact Phone Number</label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                </svg>
+                            </span>
+                            <input type="tel" id="reg-phone" class="input-control" placeholder="+1 (555) 019-2834" autocomplete="tel">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-password">Create Strong Password <span class="required">*</span></label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                            </span>
+                            <input type="password" id="reg-password" class="input-control" placeholder="Min. 8 characters" required autocomplete="new-password" minlength="8">
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                        </div>
+                        <span class="form-hint">Must contain at least 8 characters with letters &amp; numbers.</span>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 24px; font-size: 0.82rem; color: var(--gray-600);">
+                        <input type="checkbox" id="reg-terms" required style="margin-top: 3px; accent-color: var(--accent); width: 16px; height: 16px;">
+                        <label for="reg-terms" style="margin: 0; cursor: pointer;">
+                            I agree to the <a href="#" style="color: var(--accent); font-weight: 600;">Space Host Terms</a> and <a href="#" style="color: var(--accent); font-weight: 600;">Platform Guidelines</a>.
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="width: 100%; min-height: 48px; font-size: 1rem;">
+                        Create Account &amp; Continue →
+                    </button>
+                </form>
+
+                <!-- SECURITY SIMULATION BADGE (bcrypt & JWT Inspector) -->
+                <div id="security-simulation-container" style="display: none;"></div>
+            </section>
+
+            <!-- ==================== LOCKED STATE BANNER (UI Cleanup for Unauthenticated Visitors) ==================== -->
+            <div id="apply-locked-banner" class="apply-locked-card">
+                <div class="locked-icon-badge">🔒</div>
+                <h3>Space Details &amp; Control Panel Locked</h3>
+                <p>
+                    Step 2 (Space Details Application) and Step 3 (Active Control Panel) are strictly guarded for verified space owners. Please sign in or register above to unlock space configuration and live dashboard telemetry.
+                </p>
+                <a href="#auth-section" class="btn-primary" style="padding: 12px 28px; font-size: 0.95rem;">
+                    Sign In / Register Above to Unlock ↓
+                </a>
+            </div>
+
+            <!-- ==================== SECTION 2: APPLY FOR RENTING / SPACE DETAILS FORM ==================== -->
+            <section id="apply-section" class="apply-form-card" aria-labelledby="apply-heading" style="display: none;">
+                <div class="apply-header">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <span class="owner-pill" style="color: var(--accent); background: var(--navy-50); border-color: var(--navy-200);">
+                                Step 2 of 3 • Flowchart Workflow
+                            </span>
+                            <h2 id="apply-heading">Apply for Renting — Space Details Form</h2>
+                            <p>Provide verified specifications, capacity limits, real-time rates, and upload photos of your parking space.</p>
+                        </div>
+                        <a href="owner-dashboard.html" class="btn-ghost" style="font-size: 0.82rem;">
+                            Already listed? Go to Dashboard ↗
+                        </a>
+                    </div>
+                </div>
+
+                <form id="apply-space-form">
+                    
+                    <!-- 1. SPACE IDENTITY & LOCATION -->
+                    <div class="form-section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span>1. Space Identity &amp; Physical Address</span>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="space-name">Facility / Space Display Name <span class="required">*</span></label>
+                            <input type="text" id="space-name" class="input-control" value="Central Plaza Garage Deck #3" required placeholder="e.g. Metro Bay Parking, Downtown Deck A">
+                        </div>
+                        <div class="form-group">
+                            <label for="space-address">Street Address <span class="required">*</span> <span style="font-size: 0.78rem; color: var(--accent); font-weight: 600;">(Google Places Autocomplete Enabled 📍)</span></label>
+                            <div class="address-autocomplete-wrapper">
+                                <input type="text" id="space-address" class="input-control" value="123 Main Street, Downtown District" required autocomplete="off" placeholder="Start typing address or place name...">
+                                <div id="address-suggestions-dropdown" class="address-suggestions-dropdown"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label for="space-city">City <span class="required">*</span></label>
+                            <input type="text" id="space-city" class="input-control" value="Metropolis" required autocomplete="address-level2">
+                        </div>
+                        <div class="form-group">
+                            <label for="space-zip">Postal / ZIP Code <span class="required">*</span></label>
+                            <input type="text" id="space-zip" class="input-control" value="10001" required autocomplete="postal-code">
+                        </div>
+                        <div class="form-group">
+                            <label for="space-access-gate">Primary Gate / Entrance ID</label>
+                            <input type="text" id="space-access-gate" class="input-control" value="North Gate A-1" placeholder="e.g. Ramp 2, Level 3">
+                        </div>
+                    </div>
+
+                    <!-- 2. SPACE TYPE -->
+                    <div class="form-section-title" style="margin-top: 30px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="6" width="20" height="14" rx="2"/>
+                            <path d="M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        <span>2. Parking Facility Type</span>
+                    </div>
+
+                    <div class="type-radio-grid">
+                        <label class="type-card selected">
+                            <input type="radio" name="space-type" value="covered" checked>
+                            <span class="type-icon">🏢</span>
+                            <span class="type-title">Covered Garage</span>
+                            <span class="type-subtitle">Multi-story or underground covered structure. Weatherproof.</span>
+                        </label>
+
+                        <label class="type-card">
+                            <input type="radio" name="space-type" value="open">
+                            <span class="type-icon">☀️</span>
+                            <span class="type-title">Open-Air Lot</span>
+                            <span class="type-subtitle">Paved outdoor parking lot or private commercial driveway.</span>
+                        </label>
+
+                        <label class="type-card">
+                            <input type="radio" name="space-type" value="ev">
+                            <span class="type-icon">⚡</span>
+                            <span class="type-title">EV Charging Station</span>
+                            <span class="type-subtitle">Equipped with Level 2 or DC Fast EV charging equipment.</span>
+                        </label>
+
+                        <label class="type-card">
+                            <input type="radio" name="space-type" value="valet">
+                            <span class="type-icon">👑</span>
+                            <span class="type-title">Valet / VIP Bay</span>
+                            <span class="type-subtitle">Premium bays staffed with valet attendants or reserved executive slots.</span>
+                        </label>
+                    </div>
+
+                    <!-- 3. CAPACITY & DIMENSIONS -->
+                    <div class="form-section-title" style="margin-top: 30px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <span>3. Space Capacity &amp; Bay Limits</span>
+                    </div>
+
+                    <div class="form-grid-4">
+                        <div class="form-group">
+                            <label for="space-capacity">Total Available Spots <span class="required">*</span></label>
+                            <input type="number" id="space-capacity" class="input-control" value="25" min="1" max="1000" required>
+                            <span class="form-hint">Total vehicle capacity</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-standard-bays">Standard Bays</label>
+                            <input type="number" id="space-standard-bays" class="input-control" value="18" min="0">
+                            <span class="form-hint">Sedans, SUVs</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-compact-bays">Compact Bays</label>
+                            <input type="number" id="space-compact-bays" class="input-control" value="4" min="0">
+                            <span class="form-hint">Small hatchbacks</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-ev-bays">EV Charging Bays</label>
+                            <input type="number" id="space-ev-bays" class="input-control" value="3" min="0">
+                            <span class="form-hint">With charging ports</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. REAL-TIME PRICING & OPERATING HOURS -->
+                    <div class="form-section-title" style="margin-top: 30px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        <span>4. Real-Time Base Pricing &amp; Operating Hours</span>
+                    </div>
+
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label for="space-rate">Base Hourly Rate ($) <span class="required">*</span></label>
+                            <div class="input-with-icon">
+                                <span class="input-icon" style="font-weight: 700; color: var(--navy-800);">$</span>
+                                <input type="number" id="space-rate" class="input-control" value="4.50" step="0.25" min="0.50" max="100.00" required>
+                            </div>
+                            <span class="form-hint">Adjustable in real-time from dashboard</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-daily-max">Daily Maximum Cap ($)</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon" style="font-weight: 700; color: var(--navy-800);">$</span>
+                                <input type="number" id="space-daily-max" class="input-control" value="32.00" step="1.00" min="5.00">
+                            </div>
+                            <span class="form-hint">Flat rate for 24 hours</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-schedule">Operating Schedule</label>
+                            <select id="space-schedule" class="input-control" style="cursor: pointer;">
+                                <option value="24-7" selected>24 Hours / 7 Days a Week</option>
+                                <option value="business">Business Hours (06:00 AM - 10:00 PM)</option>
+                                <option value="night">Overnight Only (07:00 PM - 07:00 AM)</option>
+                                <option value="weekend">Weekends Only (Sat &amp; Sun)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 5. AMENITIES & ACCESS CONTROL -->
+                    <div class="form-section-title" style="margin-top: 30px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <span>5. Amenities &amp; Gate Access Controls</span>
+                    </div>
+
+                    <div class="amenities-grid">
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="cctv" checked>
+                            <span>📹 24/7 CCTV Surveillance</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="barrier" checked>
+                            <span>🚧 Automated Barrier Gate</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="ev" checked>
+                            <span>⚡ EV Charging Plugs</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="guard" checked>
+                            <span>👮 Security Guard On Duty</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="lighting" checked>
+                            <span>💡 High-Intensity Floodlights</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="covered" checked>
+                            <span>☂️ Weather-Proof Covered</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="disabled" checked>
+                            <span>♿ Handicap Accessible</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="amenities" value="wash">
+                            <span>🧼 On-site Car Wash Service</span>
+                        </label>
+                    </div>
+
+                    <!-- 6. UPLOAD PHOTOS (Flowchart Requirement) -->
+                    <div class="form-section-title" style="margin-top: 30px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <span>6. Upload Facility &amp; Space Photos</span>
+                    </div>
+
+                    <div class="photo-upload-dropzone" id="photo-dropzone">
+                        <div class="dropzone-icon">📷</div>
+                        <div class="dropzone-title">Drag and drop space photos here, or click to browse</div>
+                        <div class="dropzone-subtitle">High-quality photos increase booking conversions by 48% (PNG, JPG, WebP supported)</div>
+                        <input type="file" id="space-photo-input" accept="image/*" multiple style="display: none;">
+                        <button type="button" class="btn-ghost" style="padding: 6px 18px; font-size: 0.85rem;" onclick="document.getElementById('space-photo-input').click()">
+                            Select Image Files
+                        </button>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--navy-800);">Uploaded Images Gallery:</span>
+                        <button type="button" class="btn-demo-fill" id="btn-sample-photos">
+                            + Load Demo Facility Photos
+                        </button>
+                    </div>
+
+                    <div class="photo-preview-grid" id="photo-preview-grid">
+                        <!-- Rendered by owner.js -->
+                    </div>
+
+                    <!-- SUBMIT BUTTON -->
+                    <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                        <div style="font-size: 0.85rem; color: var(--gray-500);">
+                            ✓ Instant live verification • Auto-synchronizes with Active Control Panel
+                        </div>
+                        <button type="submit" class="btn-primary" style="padding: 14px 36px; font-size: 1.05rem;">
+                            Submit Space Application &amp; Open Control Panel →
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="footer" id="footer">
+        <div class="footer-container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a href="index.html" class="nav-logo">
+                        <div class="logo-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                <rect width="32" height="32" rx="8" fill="url(#logoGradFootOwner)"/>
+                                <path d="M10 22V10h6a5 5 0 0 1 0 10h-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="22" cy="22" r="3" stroke="#fff" stroke-width="2"/>
+                                <defs>
+                                    <linearGradient id="logoGradFootOwner" x1="0" y1="0" x2="32" y2="32">
+                                        <stop stop-color="#1a2f5a"/>
+                                        <stop offset="1" stroke-color="#3b6cf5"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <span class="logo-text">Park<span class="logo-highlight">Smart</span></span>
+                    </a>
+                    <p class="footer-tagline">Intelligent parking ecosystem for modern drivers and space hosts worldwide.</p>
+                </div>
+
+                <div class="footer-links-group">
+                    <h4>Host Services</h4>
+                    <ul>
+                        <li><a href="#apply-section">Apply for Renting</a></li>
+                        <li><a href="owner-dashboard.html">Active Control Panel</a></li>
+                        <li><a href="#">Host Earnings Calculator</a></li>
+                        <li><a href="#">Gate API Integration</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-links-group">
+                    <h4>Driver Platform</h4>
+                    <ul>
+                        <li><a href="index.html#spots">Find Spots</a></li>
+                        <li><a href="index.html#features">Live Map</a></li>
+                        <li><a href="index.html#how-it-works">How It Works</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-links-group">
+                    <h4>Compliance &amp; Support</h4>
+                    <ul>
+                        <li><a href="#">Host Protection Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">24/7 Support Desk</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 ParkSmart Technologies Inc. Built in alignment with the Smart Parking System Architecture.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Google Maps Places & Marker API -->
+    <script async src="https://maps.googleapis.com/maps/api/js?key=&libraries=places,marker&callback=Function.prototype"></script>
+    <script src="owner.js"></script>
+</body>
+</html>

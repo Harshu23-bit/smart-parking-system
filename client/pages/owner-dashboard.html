@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ParkSmart Space Owner Dashboard — Active Control Panel for managing space availability, real-time pricing, bookings, gate access, and location mapping.">
+    <title>Owner Dashboard — Active Control Panel | ParkSmart</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="owner.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Strict Client-Side Route Protection (Authentication Guard)
+        (function() {
+            try {
+                const token = localStorage.getItem('parksmart_jwt_token');
+                if (!token) {
+                    localStorage.setItem('parksmart_auth_error', 'Access Denied: Please sign in or register to access the Active Control Panel.');
+                    window.location.replace('owner.html#auth-section');
+                }
+            } catch(e) {
+                window.location.replace('owner.html#auth-section');
+            }
+        })();
+    </script>
+</head>
+<body class="owner-page owner-dashboard-root">
+
+    <!-- ==================== NAVBAR ==================== -->
+    <nav class="navbar scrolled" id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo" id="nav-logo">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#logoGradDash)"/>
+                        <path d="M10 22V10h6a5 5 0 0 1 0 10h-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="22" cy="22" r="3" stroke="#fff" stroke-width="2"/>
+                        <defs>
+                            <linearGradient id="logoGradDash" x1="0" y1="0" x2="32" y2="32">
+                                <stop stop-color="#1a2f5a"/>
+                                <stop offset="1" stop-color="#3b6cf5"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="logo-text">Park<span class="logo-highlight">Smart</span> <span style="font-size: 0.8rem; font-weight: 700; background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 6px; margin-left: 6px; border: 1px solid #a7f3d0;">Active Control Panel</span></span>
+            </a>
+
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html" class="nav-link">← Driver Homepage</a></li>
+                <li><a href="owner.html#apply-section" class="nav-link">Edit Space Application</a></li>
+                <li><a href="#panel-availability" class="nav-link">Availability</a></li>
+                <li><a href="#panel-pricing" class="nav-link">Pricing</a></li>
+                <li><a href="#panel-map" class="nav-link">Map Location</a></li>
+                <li><a href="#panel-bookings" class="nav-link">Bookings</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <div style="display: flex; align-items: center; gap: 10px; margin-right: 8px;">
+                    <div id="dash-owner-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: var(--navy-800); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
+                        AR
+                    </div>
+                    <div style="font-size: 0.85rem; line-height: 1.2;">
+                        <div id="dash-owner-name" style="font-weight: 700; color: var(--navy-900);">Alex Reynolds</div>
+                        <div style="font-size: 0.75rem; color: var(--success); font-weight: 600;">● JWT Session Active</div>
+                    </div>
+                </div>
+                <button type="button" id="dash-btn-logout" class="btn-ghost" style="padding: 6px 14px; font-size: 0.82rem; cursor: pointer;">Sign Out</button>
+            </div>
+
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ==================== MAIN DASHBOARD ==================== -->
+    <main class="owner-main">
+        <div class="owner-container">
+
+            <!-- HEADER BAR WITH SPACE SELECTOR & CONTROLS -->
+            <div class="dashboard-header-bar">
+                <div class="dashboard-heading">
+                    <h1 id="space-name-heading">Central Plaza Garage Deck #3</h1>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap;">
+                        <span class="space-select-pill">Facility ID: PS-SP-0081</span>
+                        <span style="font-size: 0.82rem; color: var(--gray-500);">📍 123 Main Street, Downtown District</span>
+                        <span style="font-size: 0.82rem; color: var(--accent); font-weight: 600;">Covered Garage • 24/7 Access</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="btn-ghost" id="btn-open-edit-modal" style="font-size: 0.85rem;">
+                        ✏️ Update Spot Details
+                    </button>
+                    <a href="owner.html#apply-section" class="btn-primary" style="font-size: 0.85rem; padding: 8px 18px;">
+                        + List Another Space
+                    </a>
+                </div>
+            </div>
+
+            <!-- TOP 4 METRICS CARDS -->
+            <section class="dash-metrics-grid" aria-label="Key Performance Metrics">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">Live Status</span>
+                        <span class="metric-value" id="stat-space-status" style="color: var(--success); font-size: 1.5rem;">
+                            LIVE (OPEN)
+                        </span>
+                        <span class="metric-subtext">● Accepting Bookings</span>
+                    </div>
+                    <div class="metric-icon-box green">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">Available Capacity</span>
+                        <span class="metric-value" id="stat-available-spots">7 / 25</span>
+                        <div style="width: 100%; height: 6px; background: var(--gray-200); border-radius: 3px; margin-top: 8px; overflow: hidden;">
+                            <div id="occupancy-bar-progress" style="width: 72%; height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                    <div class="metric-icon-box blue">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">Occupancy Rate</span>
+                        <span class="metric-value" id="stat-occupancy-rate">72%</span>
+                        <span class="metric-subtext">↑ 14% vs last week</span>
+                    </div>
+                    <div class="metric-icon-box purple">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                            <polyline points="17 6 23 6 23 12"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">Today's Revenue</span>
+                        <span class="metric-value" id="stat-today-revenue">$162.00</span>
+                        <span class="metric-subtext">↑ 18% surge applied</span>
+                    </div>
+                    <div class="metric-icon-box amber">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ==================== CONTROL PANEL ROW 1 ==================== -->
+            <div class="control-panel-grid">
+
+                <!-- 1. MASTER AVAILABILITY TOGGLE (Flowchart Core Requirement) -->
+                <section class="panel-card" id="panel-availability" aria-labelledby="availability-heading">
+                    <div class="panel-card-header">
+                        <div class="panel-card-title" id="availability-heading">
+                            <span>📡 Space Availability Control</span>
+                        </div>
+                        <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent); background: var(--navy-50); padding: 4px 10px; border-radius: 20px;">
+                            INSTANT SYNC
+                        </span>
+                    </div>
+
+                    <div class="availability-control-box open-state" id="availability-box">
+                        <div class="status-beacon-container open" id="status-beacon-container">
+                            <span class="beacon-dot"></span>
+                            <span id="beacon-status-text">OPEN • ACCEPTING VEHICLES</span>
+                        </div>
+
+                        <p id="availability-subtext" style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 24px; line-height: 1.5;">
+                            Your space is currently LIVE on the ParkSmart driver search and accepting reservations.
+                        </p>
+
+                        <!-- Toggle Button -->
+                        <button type="button" class="master-toggle-btn btn-turn-off" id="btn-toggle-availability">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            <span>Close Parking Space</span>
+                        </button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.82rem; color: var(--gray-600);">
+                        <div style="padding: 12px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                            <div style="font-weight: 700; color: var(--navy-900); margin-bottom: 4px;">⚡ Instant Driver Sync</div>
+                            <div>Toggle takes effect on live search within 500ms.</div>
+                        </div>
+                        <div style="padding: 12px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                            <div style="font-weight: 700; color: var(--navy-900); margin-bottom: 4px;">🛡️ Safe Closure</div>
+                            <div>Existing reservations remain honored when paused.</div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- 2. REAL-TIME PRICING ADJUSTMENT (Flowchart Core Requirement) -->
+                <section class="panel-card" id="panel-pricing" aria-labelledby="pricing-heading">
+                    <div class="panel-card-header">
+                        <div class="panel-card-title" id="pricing-heading">
+                            <span>💲 Real-Time Pricing Adjustment</span>
+                        </div>
+                        <span style="font-size: 0.78rem; font-weight: 700; color: var(--success); background: #ecfdf5; padding: 4px 10px; border-radius: 20px;">
+                            DYNAMIC MULTIPLIER
+                        </span>
+                    </div>
+
+                    <div class="pricing-slider-box">
+                        <div class="price-display-row">
+                            <span style="font-size: 0.9rem; font-weight: 600; color: var(--gray-600);">Current Live Hourly Rate:</span>
+                            <div class="live-price-tag">
+                                <span class="currency">$</span>
+                                <span id="live-price-val">4.50</span>
+                                <span class="per-unit">/ hr</span>
+                            </div>
+                        </div>
+
+                        <!-- Range Slider -->
+                        <input type="range" class="custom-range-slider" id="pricing-slider" min="1.00" max="20.00" step="0.25" value="4.50" aria-label="Hourly price slider">
+
+                        <div class="slider-scale-labels">
+                            <span>$1.00/hr (Min)</span>
+                            <span>$10.00/hr</span>
+                            <span>$20.00/hr (Max)</span>
+                        </div>
+
+                        <!-- Surge & Preset Multipliers -->
+                        <div style="margin-bottom: 12px;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--navy-800); text-transform: uppercase; letter-spacing: 0.04em;">
+                                Quick Surge Rate Multipliers:
+                            </span>
+                        </div>
+                        <div class="surge-presets-row">
+                            <button type="button" class="preset-pill surge-preset-pill active" data-multiplier="1.0">Base ($4.50)</button>
+                            <button type="button" class="preset-pill surge-preset-pill" data-multiplier="1.25">Peak Hours (+25%)</button>
+                            <button type="button" class="preset-pill surge-preset-pill" data-multiplier="1.50">Weekend Surge (+50%)</button>
+                            <button type="button" class="preset-pill surge-preset-pill" data-multiplier="1.75">Event Boost (+75%)</button>
+                        </div>
+
+                        <!-- Live Revenue Estimator -->
+                        <div class="revenue-estimator">
+                            <div>
+                                <span style="color: var(--gray-500);">Projected Daily:</span>
+                                <span class="est-val" id="est-daily-val" style="margin-left: 4px;">$243</span>
+                            </div>
+                            <div style="border-left: 1px solid var(--gray-200); padding-left: 12px;">
+                                <span style="color: var(--gray-500);">Projected Monthly:</span>
+                                <span class="est-val" id="est-monthly-val" style="margin-left: 4px;">$6,318</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-primary" id="btn-save-rates" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+                        Save &amp; Publish New Rates to Drivers ⚡
+                    </button>
+                </section>
+
+            </div>
+
+
+            <!-- ==================== CONTROL PANEL ROW 2: GOOGLE MAPS & ACCESS CONTROL ==================== -->
+            <div class="control-panel-grid">
+
+                <!-- 3. GOOGLE MAPS INTEGRATION FOR LOCATION MAPPING -->
+                <section class="panel-card" id="panel-map" aria-labelledby="map-heading">
+                    <div class="panel-card-header">
+                        <div class="panel-card-title" id="map-heading">
+                            <span>🗺️ Google Maps Location Mapping</span>
+                        </div>
+                        <div class="map-coords-badge">
+                            <span>GPS:</span>
+                            <span id="map-lat-val">40.71280</span>,
+                            <span id="map-lng-val">-74.00600</span>
+                        </div>
+                    </div>
+
+                    <div class="map-toolbar">
+                        <div style="display: flex; gap: 8px; flex: 1; max-width: 380px;">
+                            <input type="text" id="map-address-search" class="input-control" placeholder="Search address or entrance ramp..." style="min-height: 38px; padding: 6px 12px; font-size: 0.85rem;" value="123 Main Street, Downtown">
+                            <button type="button" class="btn-primary" id="btn-search-map" style="padding: 6px 14px; font-size: 0.82rem; white-space: nowrap;">
+                                Search
+                            </button>
+                        </div>
+                        <button type="button" class="btn-ghost" id="btn-save-location" style="padding: 6px 14px; font-size: 0.82rem;">
+                            Save Entrance Pin 📍
+                        </button>
+                    </div>
+
+                    <div class="map-widget-container">
+                        <!-- Google Maps Canvas Container -->
+                        <div id="owner-google-map" class="google-map-frame" style="height: 340px;"></div>
+                    </div>
+
+                    <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; color: var(--gray-500);">
+                        <span>💡 Tip: Drag the pin on the map to place your parking garage entrance gate accurately.</span>
+                        <span style="font-weight: 600; color: var(--navy-800);">MapId: DEMO_MAP_ID</span>
+                    </div>
+                </section>
+
+
+                <!-- 4. ACCESS CONTROL (Gate Code & Barrier API) -->
+                <section class="panel-card" id="panel-access" aria-labelledby="access-heading">
+                    <div class="panel-card-header">
+                        <div class="panel-card-title" id="access-heading">
+                            <span>🔐 Access Control &amp; Gate Key API</span>
+                        </div>
+                        <span class="status-badge parked" style="font-size: 0.75rem;">CONNECTED</span>
+                    </div>
+
+                    <div class="access-control-box">
+                        <div class="access-card-inner">
+                            <span style="font-size: 0.82rem; font-weight: 600; color: var(--gray-500); text-transform: uppercase;">
+                                Active Gate PIN Code
+                            </span>
+                            <div class="gate-code-display" id="dash-gate-code">8492#</div>
+                            <button type="button" class="btn-ghost" id="btn-regen-gate-code" style="font-size: 0.78rem; padding: 6px 12px;">
+                                🔄 Generate New PIN
+                            </button>
+                        </div>
+
+                        <div class="access-card-inner">
+                            <span style="font-size: 0.82rem; font-weight: 600; color: var(--gray-500); text-transform: uppercase;">
+                                Smart Barrier Status
+                            </span>
+                            <div>
+                                <span class="barrier-status-indicator locked" id="barrier-status-indicator">
+                                    <span>🔒 Barrier Locked</span>
+                                </span>
+                            </div>
+                            <button type="button" class="btn-primary" id="btn-trigger-barrier" style="font-size: 0.78rem; padding: 8px 16px; margin-top: 6px;">
+                                Trigger Barrier Gate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- API / Webhook Integration Key -->
+                    <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 14px 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <span style="font-size: 0.82rem; font-weight: 700; color: var(--navy-900);">Barrier IoT Webhook Endpoint</span>
+                            <button type="button" class="btn-action-sm" id="btn-copy-api-key" style="margin: 0; font-size: 0.74rem;">
+                                Copy API Key
+                            </button>
+                        </div>
+                        <code style="font-size: 0.76rem; color: var(--navy-700); word-break: break-all; font-family: monospace;">
+                            https://api.parksmart.io/v1/barrier/access?key=pk_live_sec_9942a78f0b12c
+                        </code>
+                    </div>
+                </section>
+
+            </div>
+
+
+            <!-- ==================== BOOKING MANAGEMENT & CANCELLATIONS ==================== -->
+            <section class="panel-card" id="panel-bookings" aria-labelledby="bookings-heading" style="margin-bottom: 32px;">
+                <div class="panel-card-header">
+                    <div>
+                        <div class="panel-card-title" id="bookings-heading">
+                            <span>📋 Booking Management &amp; Cancellations</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 4px;">
+                            Live monitoring of incoming drivers, active parking vehicles, check-in validations, and cancellations.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-primary" id="btn-add-walkin" style="font-size: 0.85rem; padding: 8px 16px;">
+                        + Register Walk-In Renter
+                    </button>
+                </div>
+
+                <!-- Table Filter Pills & Search -->
+                <div class="table-filter-bar">
+                    <div class="table-filter-pills">
+                        <button type="button" class="table-pill-btn active" data-filter="all">All Bookings</button>
+                        <button type="button" class="table-pill-btn" data-filter="parked">Parked (Active)</button>
+                        <button type="button" class="table-pill-btn" data-filter="reserved">Upcoming Reservations</button>
+                        <button type="button" class="table-pill-btn" data-filter="completed">Completed</button>
+                        <button type="button" class="table-pill-btn" data-filter="cancelled">Cancelled</button>
+                    </div>
+
+                    <div style="position: relative; min-width: 240px;">
+                        <input type="text" id="booking-search-input" class="input-control" placeholder="Search driver, plate, or ID..." style="min-height: 38px; padding: 6px 14px; font-size: 0.85rem;">
+                    </div>
+                </div>
+
+                <!-- Responsive Bookings Table -->
+                <div class="responsive-table-wrapper">
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Driver &amp; Booking ID</th>
+                                <th>License Plate</th>
+                                <th>Assigned Bay</th>
+                                <th>Time Slot &amp; Vehicle</th>
+                                <th>Gross Total</th>
+                                <th>Status</th>
+                                <th>Host Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-table-body">
+                            <!-- Populated dynamically by owner.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <!-- ==================== EARNINGS & PAYMENT HISTORY ==================== -->
+            <section class="panel-card" id="panel-earnings" aria-labelledby="earnings-heading" style="margin-bottom: 40px;">
+                <div class="panel-card-header">
+                    <div>
+                        <div class="panel-card-title" id="earnings-heading">
+                            <span>💳 Earnings &amp; Payment History</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 4px;">
+                            Transparent financial records, platform commission splits, and automated bank payouts.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-primary" onclick="showToast('Payout of $785.00 scheduled to your linked bank account!', 'success')" style="font-size: 0.85rem; padding: 8px 18px;">
+                        Request Instant Payout ($785.00)
+                    </button>
+                </div>
+
+                <div class="dash-metrics-grid" style="margin-bottom: 20px;">
+                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">Today's Net</span>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--navy-900);">$149.04</div>
+                        <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">After 8% platform fee</span>
+                    </div>
+                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">This Month</span>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--navy-900);">$3,201.60</div>
+                        <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">142 total bookings</span>
+                    </div>
+                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">Available Payout</span>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent);">$785.00</div>
+                        <span style="font-size: 0.75rem; color: var(--gray-500);">Auto-deposits Friday</span>
+                    </div>
+                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">Platform Fee</span>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--gray-700);">8.0%</div>
+                        <span style="font-size: 0.75rem; color: var(--gray-500);">Industry lowest rate</span>
+                    </div>
+                </div>
+
+                <div class="responsive-table-wrapper">
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction Ref</th>
+                                <th>Settlement Date</th>
+                                <th>Payout Destination</th>
+                                <th>Gross Revenue</th>
+                                <th>Platform Split (8%)</th>
+                                <th>Net Payout</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>TRX-99214</code></td>
+                                <td>September 8, 2026</td>
+                                <td>Chase Bank ****4129</td>
+                                <td>$850.00</td>
+                                <td>-$68.00</td>
+                                <td><strong>$782.00</strong></td>
+                                <td><span class="status-badge parked">PAID</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>TRX-98402</code></td>
+                                <td>September 1, 2026</td>
+                                <td>Chase Bank ****4129</td>
+                                <td>$920.00</td>
+                                <td>-$73.60</td>
+                                <td><strong>$846.40</strong></td>
+                                <td><span class="status-badge parked">PAID</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>TRX-97655</code></td>
+                                <td>August 25, 2026</td>
+                                <td>Chase Bank ****4129</td>
+                                <td>$790.00</td>
+                                <td>-$63.20</td>
+                                <td><strong>$726.80</strong></td>
+                                <td><span class="status-badge parked">PAID</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- ==================== MODAL: UPDATE SPOT DETAILS ==================== -->
+    <div class="owner-modal-backdrop" id="edit-spot-modal">
+        <div class="owner-modal-card">
+            <div class="owner-modal-header">
+                <h3>Update Parking Space Details</h3>
+                <button type="button" class="btn-close-modal" id="btn-close-edit-modal">✕</button>
+            </div>
+            <form id="edit-spot-form">
+                <div class="form-group">
+                    <label for="edit-name">Space Display Name</label>
+                    <input type="text" id="edit-name" class="input-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-address">Physical Address</label>
+                    <input type="text" id="edit-address" class="input-control" required>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="edit-capacity">Total Spot Capacity</label>
+                        <input type="number" id="edit-capacity" class="input-control" min="1" max="1000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-rate">Default Base Rate ($/hr)</label>
+                        <input type="number" id="edit-rate" class="input-control" step="0.25" min="0.50" required>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-ghost" onclick="document.getElementById('edit-spot-modal').classList.remove('active')">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Google Maps Platform Loader (async script) -->
+    <script async src="https://maps.googleapis.com/maps/api/js?key=&libraries=places,marker&callback=Function.prototype"></script>
+    <script src="owner.js"></script>
+</body>
+</html>
