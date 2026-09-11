@@ -27,6 +27,7 @@ Docker, Google Maps, and vanilla HTML/CSS/JavaScript.
 - JWT authentication
 - Payment integration
 - Owner payouts
+- Cloud deployment
 - IoT parking barrier integration
 - PIN/QR-based parking access
 
