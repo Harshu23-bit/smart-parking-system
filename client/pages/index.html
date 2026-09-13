@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Smart Parking System - Find, book, and manage parking spots in real-time. Reserve your spot effortlessly with our intelligent parking platform.">
     <title>ParkSmart — Intelligent Parking, Simplified</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -36,13 +36,13 @@
                 <li><a href="#features" class="nav-link">Features</a></li>
                 <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
                 <li><a href="#spots" class="nav-link">Find Spots</a></li>
-                <li><a href="owner.html" class="nav-link">List Your Space</a></li>
-                <li id="home-nav-owner-dash" style="display: none;"><a href="owner-dashboard.html" class="nav-link" style="color: var(--accent); font-weight: 600;">Owner Dashboard</a></li>
+                <li><a href="/pages/owner.html" class="nav-link">List Your Space</a></li>
+                <li id="home-nav-owner-dash" style="display: none;"><a href="/pages/owner-dashboard.html" class="nav-link" style="color: var(--accent); font-weight: 600;">Owner Dashboard</a></li>
             </ul>
 
             <div class="nav-actions">
-                <a href="owner.html#auth-section" class="btn-ghost" id="btn-login" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Log In</a>
-                <a href="owner.html#apply-section" class="btn-primary" id="btn-register" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Get Started</a>
+                <a href="/pages/owner.html#auth-section" class="btn-ghost" id="btn-login" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Log In</a>
+                <a href="/pages/owner.html#apply-section" class="btn-primary" id="btn-register" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Get Started</a>
             </div>
 
             <button class="hamburger" id="hamburger" aria-label="Toggle menu">
@@ -149,7 +149,7 @@
 
         <!-- Hero Background Image Layer -->
         <div class="hero-bg-image">
-            <img src="hero-parking.jpg" alt="Smart parking lot" />
+            <img src="../assets/images/hero-parking.jpg" alt="Smart parking lot" />
             <div class="hero-bg-image-fade"></div>
         </div>
 
@@ -595,7 +595,7 @@
                             <span>Instant payouts</span>
                         </div>
                     </div>
-                    <a href="owner.html#apply-section" class="btn-cta" id="btn-list-space" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                    <a href="/pages/owner.html#apply-section" class="btn-cta" id="btn-list-space" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
                         List Your Space
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -656,8 +656,8 @@
                     <h4>Product</h4>
                     <ul>
                         <li><a href="#spots">Find Parking</a></li>
-                        <li><a href="owner.html">List Your Space</a></li>
-                        <li><a href="owner-dashboard.html">Owner Dashboard</a></li>
+                        <li><a href="/pages/owner.html">List Your Space</a></li>
+                        <li><a href="/pages/owner-dashboard.html">Owner Dashboard</a></li>
                         <li><a href="#features">Platform Features</a></li>
                     </ul>
                 </div>
@@ -700,6 +700,6 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="../js/script.js"></script>
 </body>
 </html>

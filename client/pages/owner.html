@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ParkSmart Space Owner Portal — Monetize your parking space. Register, list your space details, set real-time pricing, and manage bookings.">
     <title>ParkSmart — Space Owner Portal &amp; Listing</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="owner.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/owner.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -55,32 +55,6 @@
     <!-- ==================== MAIN CONTENT ==================== -->
     <main class="owner-main">
         <div class="owner-container">
-
-            <!-- WORKFLOW TRACKER (Reflecting Revised Flowchart) -->
-            <nav class="workflow-tracker" aria-label="Owner Onboarding Steps">
-                <div class="tracker-step active" id="tracker-step-1">
-                    <span class="step-badge" id="step-badge-1">1</span>
-                    <span>Owner Login / Register</span>
-                </div>
-                <div class="tracker-arrow">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                </div>
-                <div class="tracker-step" id="tracker-step-2">
-                    <span class="step-badge" id="step-badge-2">2</span>
-                    <span>Apply for Renting / Space Details</span>
-                </div>
-                <div class="tracker-arrow">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                </div>
-                <div class="tracker-step" id="tracker-step-3" style="opacity: 0.5;">
-                    <span class="step-badge" id="step-badge-3">🔒</span>
-                    <span id="tracker-step-3-text">Owner Dashboard (Control Panel)</span>
-                </div>
-            </nav>
 
             <!-- OWNER HERO BANNER -->
             <section class="owner-hero-banner">
@@ -136,7 +110,17 @@
                     <div class="form-group">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <label for="owner-login-password" style="margin-bottom: 0;">Password <span class="required">*</span></label>
-                            <a href="#" style="font-size: 0.8rem; color: var(--accent); font-weight: 600;">Forgot?</a>
+                            <a
+                                href="#"
+                                id="owner-forgot-password"
+                                style="
+                                    font-size:0.8rem;
+                                    color:var(--accent);
+                                    font-weight:600;
+                                "
+                            >
+                                Forgot password?
+                            </a>
                         </div>
                         <div class="input-with-icon">
                             <span class="input-icon">
@@ -159,13 +143,6 @@
                         Sign In to Owner Portal →
                     </button>
 
-                    <!-- QUICK DEMO PRESET -->
-                    <div class="demo-credentials-box">
-                        <div class="demo-text">
-                            <strong>Quick Evaluation:</strong> Pre-filled verified owner account
-                        </div>
-                        <button type="button" class="btn-demo-fill" id="btn-demo-credentials">Fill Demo</button>
-                    </div>
                 </form>
 
                 <!-- REGISTER FORM -->
@@ -235,20 +212,198 @@
                     </button>
                 </form>
 
-                <!-- SECURITY SIMULATION BADGE (bcrypt & JWT Inspector) -->
-                <div id="security-simulation-container" style="display: none;"></div>
             </section>
 
-            <!-- ==================== LOCKED STATE BANNER (UI Cleanup for Unauthenticated Visitors) ==================== -->
-            <div id="apply-locked-banner" class="apply-locked-card">
-                <div class="locked-icon-badge">🔒</div>
-                <h3>Space Details &amp; Control Panel Locked</h3>
-                <p>
-                    Step 2 (Space Details Application) and Step 3 (Active Control Panel) are strictly guarded for verified space owners. Please sign in or register above to unlock space configuration and live dashboard telemetry.
-                </p>
-                <a href="#auth-section" class="btn-primary" style="padding: 12px 28px; font-size: 0.95rem;">
-                    Sign In / Register Above to Unlock ↓
-                </a>
+            <!-- ==================== FORGOT PASSWORD MODAL ==================== -->
+
+            <div
+                id="forgot-password-overlay"
+                style="
+                    display:none;
+                    position:fixed;
+                    inset:0;
+                    z-index:10000;
+                    background:rgba(15,23,42,.68);
+                    padding:24px;
+                    overflow:auto;
+                "
+            >
+
+                <div
+                    style="
+                        width:min(460px,100%);
+                        margin:70px auto;
+                        background:#fff;
+                        border-radius:18px;
+                        padding:28px;
+                        box-shadow:0 24px 70px rgba(0,0,0,.28);
+                    "
+                >
+
+                    <div
+                        style="
+                            display:flex;
+                            justify-content:space-between;
+                            gap:16px;
+                            margin-bottom:22px;
+                        "
+                    >
+
+                        <div>
+                            <h2 style="margin:0;">
+                                Reset Password
+                            </h2>
+
+                            <p
+                                id="forgot-password-description"
+                                style="
+                                    margin:7px 0 0;
+                                    color:#64748b;
+                                    line-height:1.5;
+                                "
+                            >
+                                Enter your owner email to receive a reset code.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            id="forgot-password-close"
+                            style="
+                                border:0;
+                                background:transparent;
+                                cursor:pointer;
+                                font-size:1.5rem;
+                            "
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+
+                    <!-- STEP 1 -->
+
+                    <form id="forgot-password-email-form">
+
+                        <div class="form-group">
+
+                            <label for="forgot-password-email">
+                                Owner Email
+                            </label>
+
+                            <input
+                                id="forgot-password-email"
+                                class="input-control"
+                                type="email"
+                                required
+                                autocomplete="email"
+                            >
+
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn-primary"
+                            style="width:100%;"
+                        >
+                            Send Reset Code
+                        </button>
+
+                    </form>
+
+
+                    <!-- STEP 2 -->
+
+                    <form
+                        id="forgot-password-otp-form"
+                        style="display:none;"
+                    >
+
+                        <div class="form-group">
+
+                            <label for="forgot-password-otp">
+                                6-Digit Reset Code
+                            </label>
+
+                            <input
+                                id="forgot-password-otp"
+                                class="input-control"
+                                type="text"
+                                maxlength="6"
+                                inputmode="numeric"
+                                pattern="[0-9]{6}"
+                                autocomplete="one-time-code"
+                                required
+                            >
+
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn-primary"
+                            style="width:100%;"
+                        >
+                            Verify Code
+                        </button>
+
+                    </form>
+
+
+                    <!-- STEP 3 -->
+
+                    <form
+                        id="forgot-password-new-form"
+                        style="display:none;"
+                    >
+
+                        <div class="form-group">
+
+                            <label for="forgot-password-new">
+                                New Password
+                            </label>
+
+                            <input
+                                id="forgot-password-new"
+                                class="input-control"
+                                type="password"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="forgot-password-confirm">
+                                Confirm New Password
+                            </label>
+
+                            <input
+                                id="forgot-password-confirm"
+                                class="input-control"
+                                type="password"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            >
+
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn-primary"
+                            style="width:100%;"
+                        >
+                            Reset Password
+                        </button>
+
+                    </form>
+
+                </div>
+
             </div>
 
             <!-- ==================== SECTION 2: APPLY FOR RENTING / SPACE DETAILS FORM ==================== -->
@@ -256,9 +411,6 @@
                 <div class="apply-header">
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                         <div>
-                            <span class="owner-pill" style="color: var(--accent); background: var(--navy-50); border-color: var(--navy-200);">
-                                Step 2 of 3 • Flowchart Workflow
-                            </span>
                             <h2 id="apply-heading">Apply for Renting — Space Details Form</h2>
                             <p>Provide verified specifications, capacity limits, real-time rates, and upload photos of your parking space.</p>
                         </div>
@@ -279,32 +431,196 @@
                         <span>1. Space Identity &amp; Physical Address</span>
                     </div>
 
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label for="space-name">Facility / Space Display Name <span class="required">*</span></label>
-                            <input type="text" id="space-name" class="input-control" value="Central Plaza Garage Deck #3" required placeholder="e.g. Metro Bay Parking, Downtown Deck A">
-                        </div>
-                        <div class="form-group">
-                            <label for="space-address">Street Address <span class="required">*</span> <span style="font-size: 0.78rem; color: var(--accent); font-weight: 600;">(Google Places Autocomplete Enabled 📍)</span></label>
-                            <div class="address-autocomplete-wrapper">
-                                <input type="text" id="space-address" class="input-control" value="123 Main Street, Downtown District" required autocomplete="off" placeholder="Start typing address or place name...">
-                                <div id="address-suggestions-dropdown" class="address-suggestions-dropdown"></div>
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <label for="parking-location-preset">
+                            Development Parking Location
+                            <span class="required">*</span>
+                        </label>
+
+                        <select
+                            id="parking-location-preset"
+                            class="input-control"
+                            style="cursor: pointer;"
+                        >
+                            <option value="">
+                                Select a real parking facility...
+                            </option>
+
+                            <option value="bhayandar-station">
+                                Bhayandar West Railway Station Skywalk Pay & Park
+                            </option>
+
+                            <option value="star-bazaar">
+                                Star Bazaar Pay & Park — Reservation 264A
+                            </option>
+
+                            <option value="mira-road-station">
+                                Mira Road East Railway Station Pay & Park — Reservation 184
+                            </option>
+
+                            <option value="mira-road-skywalk">
+                                Mira Road East Skywalk Parallel Road Pay & Park
+                            </option>
+
+                            <option value="ramdev-park">
+                                Ramdev Park Road Pay & Park — Reservation 245
+                            </option>
+
+                            <option value="navghar">
+                                Navghar Pay & Park — Reservation 301
+                            </option>
+
+                            <option value="bkc-rg2">
+                                MMRDA BKC RG-2 Public Car Parking
+                            </option>
+
+                            <option value="custom">
+                                My Own Parking Space — Enter Manually
+                            </option>
+                        </select>
+
+                        <span class="form-hint">
+                            Development presets only. Choose "My Own Parking Space"
+                            to enter another location.
+                        </span>
                     </div>
 
+
+                    <div class="form-grid-2">
+
+                        <div class="form-group">
+                            <label for="space-name">
+                                Facility / Space Display Name
+                                <span class="required">*</span>
+                            </label>
+
+                            <input
+                                type="text"
+                                id="space-name"
+                                class="input-control"
+                                required
+                                placeholder="e.g. Harsh Parking Garage"
+                            >
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="space-address">
+                                Street Address
+                                <span class="required">*</span>
+                            </label>
+
+                            <input
+                                type="text"
+                                id="space-address"
+                                class="input-control"
+                                required
+                                autocomplete="street-address"
+                                placeholder="Parking facility address"
+                            >
+                        </div>
+
+                    </div>
+
+
                     <div class="form-grid-3">
+
                         <div class="form-group">
-                            <label for="space-city">City <span class="required">*</span></label>
-                            <input type="text" id="space-city" class="input-control" value="Metropolis" required autocomplete="address-level2">
+                            <label for="space-city">
+                                City
+                                <span class="required">*</span>
+                            </label>
+
+                            <input
+                                type="text"
+                                id="space-city"
+                                class="input-control"
+                                required
+                                autocomplete="address-level2"
+                            >
                         </div>
+
+
                         <div class="form-group">
-                            <label for="space-zip">Postal / ZIP Code <span class="required">*</span></label>
-                            <input type="text" id="space-zip" class="input-control" value="10001" required autocomplete="postal-code">
+                            <label for="space-zip">
+                                PIN Code
+                                <span class="required">*</span>
+                            </label>
+
+                            <input
+                                type="text"
+                                id="space-zip"
+                                class="input-control"
+                                required
+                                maxlength="6"
+                                inputmode="numeric"
+                                autocomplete="postal-code"
+                                placeholder="400001"
+                            >
                         </div>
+
+
                         <div class="form-group">
-                            <label for="space-access-gate">Primary Gate / Entrance ID</label>
-                            <input type="text" id="space-access-gate" class="input-control" value="North Gate A-1" placeholder="e.g. Ramp 2, Level 3">
+                            <label for="space-access-gate">
+                                Primary Gate / Entrance ID
+                            </label>
+
+                            <input
+                                type="text"
+                                id="space-access-gate"
+                                class="input-control"
+                                placeholder="e.g. Main Gate, Ramp 1"
+                            >
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="custom-location-coordinates"
+                        class="form-grid-2"
+                        style="display: none;"
+                    >
+                        <div class="form-group">
+                            <label for="space-latitude">
+                                Latitude
+                                <span class="required">*</span>
+                            </label>
+
+                            <input
+                                type="number"
+                                id="space-latitude"
+                                class="input-control"
+                                step="0.000001"
+                                min="-90"
+                                max="90"
+                                placeholder="19.076090"
+                            >
+
+                            <span class="form-hint">
+                                Required only for a custom location.
+                            </span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="space-longitude">
+                                Longitude
+                                <span class="required">*</span>
+                            </label>
+
+                            <input
+                                type="number"
+                                id="space-longitude"
+                                class="input-control"
+                                step="0.000001"
+                                min="-180"
+                                max="180"
+                                placeholder="72.877426"
+                            >
+
+                            <span class="form-hint">
+                                Required only for a custom location.
+                            </span>
                         </div>
                     </div>
 
@@ -363,19 +679,49 @@
                             <span class="form-hint">Total vehicle capacity</span>
                         </div>
                         <div class="form-group">
-                            <label for="space-standard-bays">Standard Bays</label>
+                            <label for="space-standard-bays">Standard Car Bays</label>
                             <input type="number" id="space-standard-bays" class="input-control" value="18" min="0">
                             <span class="form-hint">Sedans, SUVs</span>
                         </div>
                         <div class="form-group">
-                            <label for="space-compact-bays">Compact Bays</label>
+                            <label for="space-compact-bays">Compact Car Bays</label>
                             <input type="number" id="space-compact-bays" class="input-control" value="4" min="0">
                             <span class="form-hint">Small hatchbacks</span>
                         </div>
                         <div class="form-group">
-                            <label for="space-ev-bays">EV Charging Bays</label>
+                            <label for="space-ev-bays">EV Car Bays</label>
                             <input type="number" id="space-ev-bays" class="input-control" value="3" min="0">
                             <span class="form-hint">With charging ports</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-motorcycle-bays">
+                                Motorcycle / Bike Bays
+                            </label>
+                            <input
+                                type="number"
+                                id="space-motorcycle-bays"
+                                class="input-control"
+                                value="0"
+                                min="0"
+                            >
+                            <span class="form-hint">
+                                Motorcycles and bikes
+                            </span>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-scooter-bays">
+                                Scooter / Scooty Bays
+                            </label>
+                            <input
+                                type="number"
+                                id="space-scooter-bays"
+                                class="input-control"
+                                value="0"
+                                min="0"
+                            >
+                            <span class="form-hint">
+                                Scooters and scooties
+                            </span>
                         </div>
                     </div>
 
@@ -390,18 +736,18 @@
 
                     <div class="form-grid-3">
                         <div class="form-group">
-                            <label for="space-rate">Base Hourly Rate ($) <span class="required">*</span></label>
+                            <label for="space-rate">Base Hourly Rate (₹) <span class="required">*</span></label>
                             <div class="input-with-icon">
-                                <span class="input-icon" style="font-weight: 700; color: var(--navy-800);">$</span>
-                                <input type="number" id="space-rate" class="input-control" value="4.50" step="0.25" min="0.50" max="100.00" required>
+                                <span class="input-icon" style="font-weight: 700; color: var(--navy-800);">₹</span>
+                                <input type="number" id="space-rate" class="input-control" value="50" step="5" min="10" max="1000" required>
                             </div>
                             <span class="form-hint">Adjustable in real-time from dashboard</span>
                         </div>
                         <div class="form-group">
-                            <label for="space-daily-max">Daily Maximum Cap ($)</label>
+                            <label for="space-daily-max">Daily Maximum Cap (₹)</label>
                             <div class="input-with-icon">
-                                <span class="input-icon" style="font-weight: 700; color: var(--navy-800);">$</span>
-                                <input type="number" id="space-daily-max" class="input-control" value="32.00" step="1.00" min="5.00">
+                                <span class="input-icon" style="font-weight: 700; color: var(--navy-800);">₹</span>
+                                <input type="number" id="space-daily-max" class="input-control" value="500" step="10" min="50">
                             </div>
                             <span class="form-hint">Flat rate for 24 hours</span>
                         </div>
@@ -481,9 +827,6 @@
 
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                         <span style="font-size: 0.85rem; font-weight: 600; color: var(--navy-800);">Uploaded Images Gallery:</span>
-                        <button type="button" class="btn-demo-fill" id="btn-sample-photos">
-                            + Load Demo Facility Photos
-                        </button>
                     </div>
 
                     <div class="photo-preview-grid" id="photo-preview-grid">
@@ -565,8 +908,7 @@
         </div>
     </footer>
 
-    <!-- Google Maps Places & Marker API -->
-    <script async src="https://maps.googleapis.com/maps/api/js?key=&libraries=places,marker&callback=Function.prototype"></script>
-    <script src="owner.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/owner.js"></script>
 </body>
 </html>

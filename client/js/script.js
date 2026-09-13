@@ -1,6 +1,6 @@
 /* ============================================
-   ParkSmart — JavaScript
-   Typewriter, Animations, Interactions
+ParkSmart — JavaScript
+Typewriter, Animations, Interactions
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {

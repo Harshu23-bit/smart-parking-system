@@ -5,25 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ParkSmart Space Owner Dashboard — Active Control Panel for managing space availability, real-time pricing, bookings, gate access, and location mapping.">
     <title>Owner Dashboard — Active Control Panel | ParkSmart</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="owner.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/owner.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        // Strict Client-Side Route Protection (Authentication Guard)
-        (function() {
-            try {
-                const token = localStorage.getItem('parksmart_jwt_token');
-                if (!token) {
-                    localStorage.setItem('parksmart_auth_error', 'Access Denied: Please sign in or register to access the Active Control Panel.');
-                    window.location.replace('owner.html#auth-section');
-                }
-            } catch(e) {
-                window.location.replace('owner.html#auth-section');
-            }
-        })();
-    </script>
+    
 </head>
 <body class="owner-page owner-dashboard-root">
 
@@ -52,22 +39,59 @@
                 <li><a href="owner.html#apply-section" class="nav-link">Edit Space Application</a></li>
                 <li><a href="#panel-availability" class="nav-link">Availability</a></li>
                 <li><a href="#panel-pricing" class="nav-link">Pricing</a></li>
-                <li><a href="#panel-map" class="nav-link">Map Location</a></li>
                 <li><a href="#panel-bookings" class="nav-link">Bookings</a></li>
-            </ul>
+                <li class="dashboard-nav-menu">
 
-            <div class="nav-actions">
-                <div style="display: flex; align-items: center; gap: 10px; margin-right: 8px;">
-                    <div id="dash-owner-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: var(--navy-800); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
-                        AR
-                    </div>
-                    <div style="font-size: 0.85rem; line-height: 1.2;">
-                        <div id="dash-owner-name" style="font-weight: 700; color: var(--navy-900);">Alex Reynolds</div>
-                        <div style="font-size: 0.75rem; color: var(--success); font-weight: 600;">● JWT Session Active</div>
-                    </div>
+                <button
+                    type="button"
+                    id="dashboard-more-btn"
+                    class="dashboard-nav-more-btn"
+                    aria-label="Dashboard options"
+                    aria-expanded="false"
+                >
+                    ⋮
+                </button>
+
+
+                <div
+                    id="dashboard-more-menu"
+                    class="dashboard-more-menu"
+                >
+
+                    <button
+                        type="button"
+                        id="menu-edit-space"
+                    >
+                        ✏️ Edit Space Details
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="menu-theme-toggle"
+                    >
+                        🌙 Dark Mode
+                    </button>
+
+
+                    <a
+                        href="/pages/owner.html#apply-section"
+                    >
+                        ➕ List Another Space
+                    </a>
+
+
+                    <button
+                        type="button"
+                        id="menu-owner-settings"
+                    >
+                        ⚙️ Owner Settings
+                    </button>
+
                 </div>
-                <button type="button" id="dash-btn-logout" class="btn-ghost" style="padding: 6px 14px; font-size: 0.82rem; cursor: pointer;">Sign Out</button>
-            </div>
+
+            </li>
+            </ul>
 
             <button class="hamburger" id="hamburger" aria-label="Toggle menu">
                 <span></span><span></span><span></span>
@@ -79,25 +103,96 @@
     <main class="owner-main">
         <div class="owner-container">
 
-            <!-- HEADER BAR WITH SPACE SELECTOR & CONTROLS -->
+            <!-- REAL OWNER PARKING SPACE HEADER -->
             <div class="dashboard-header-bar">
+
                 <div class="dashboard-heading">
-                    <h1 id="space-name-heading">Central Plaza Garage Deck #3</h1>
-                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap;">
-                        <span class="space-select-pill">Facility ID: PS-SP-0081</span>
-                        <span style="font-size: 0.82rem; color: var(--gray-500);">📍 123 Main Street, Downtown District</span>
-                        <span style="font-size: 0.82rem; color: var(--accent); font-weight: 600;">Covered Garage • 24/7 Access</span>
+
+                    <div
+                        style="
+                            display:flex;
+                            align-items:center;
+                            gap:12px;
+                            flex-wrap:wrap;
+                            margin-bottom:10px;
+                        "
+                    >
+                        <label
+                            for="dashboard-space-selector"
+                            style="
+                                font-size:0.8rem;
+                                font-weight:700;
+                            "
+                        >
+                            Parking Space:
+                        </label>
+
+                        <select
+                            id="dashboard-space-selector"
+                            class="input-control"
+                            style="
+                                width:auto;
+                                min-width:260px;
+                            "
+                        >
+                        </select>
                     </div>
+
+                    <h1 id="space-name-heading">
+                        Loading parking space...
+                    </h1>
+
+                    <div
+                        style="
+                            display:flex;
+                            align-items:center;
+                            gap:10px;
+                            margin-top:6px;
+                            flex-wrap:wrap;
+                        "
+                    >
+                        <span
+                            class="space-select-pill"
+                            id="dashboard-facility-id"
+                        >
+                            Facility ID: —
+                        </span>
+
+                        <span
+                            id="dashboard-space-address"
+                            style="
+                                font-size:0.82rem;
+                                color:var(--gray-500);
+                            "
+                        >
+                            📍 —
+                        </span>
+
+                        <span
+                            id="dashboard-space-type"
+                            style="
+                                font-size:0.82rem;
+                                color:var(--accent);
+                                font-weight:600;
+                            "
+                        >
+                            —
+                        </span>
                 </div>
 
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button type="button" class="btn-ghost" id="btn-open-edit-modal" style="font-size: 0.85rem;">
-                        ✏️ Update Spot Details
-                    </button>
-                    <a href="owner.html#apply-section" class="btn-primary" style="font-size: 0.85rem; padding: 8px 18px;">
-                        + List Another Space
-                    </a>
+            </div>
+
+                <div
+                    style="
+                        display:flex;
+                        gap:10px;
+                        align-items:center;
+                        flex-wrap:wrap;
+                    "
+                >
+
                 </div>
+
             </div>
 
             <!-- TOP 4 METRICS CARDS -->
@@ -121,7 +216,7 @@
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">Available Capacity</span>
-                        <span class="metric-value" id="stat-available-spots">7 / 25</span>
+                        <span class="metric-value" id="stat-available-spots">0 / 0</span>
                         <div style="width: 100%; height: 6px; background: var(--gray-200); border-radius: 3px; margin-top: 8px; overflow: hidden;">
                             <div id="occupancy-bar-progress" style="width: 72%; height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s;"></div>
                         </div>
@@ -137,8 +232,8 @@
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">Occupancy Rate</span>
-                        <span class="metric-value" id="stat-occupancy-rate">72%</span>
-                        <span class="metric-subtext">↑ 14% vs last week</span>
+                        <span class="metric-value" id="stat-occupancy-rate">0%</span>
+                        <span class="metric-subtext">No booking activity yet</span>
                     </div>
                     <div class="metric-icon-box purple">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -151,8 +246,8 @@
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">Today's Revenue</span>
-                        <span class="metric-value" id="stat-today-revenue">$162.00</span>
-                        <span class="metric-subtext">↑ 18% surge applied</span>
+                        <span class="metric-value" id="stat-today-revenue">₹0.00</span>
+                        <span class="metric-subtext"></span>
                     </div>
                     <div class="metric-icon-box amber">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -216,7 +311,7 @@
                 <section class="panel-card" id="panel-pricing" aria-labelledby="pricing-heading">
                     <div class="panel-card-header">
                         <div class="panel-card-title" id="pricing-heading">
-                            <span>💲 Real-Time Pricing Adjustment</span>
+                            <span>₹ Real-Time Pricing Adjustment</span>
                         </div>
                         <span style="font-size: 0.78rem; font-weight: 700; color: var(--success); background: #ecfdf5; padding: 4px 10px; border-radius: 20px;">
                             DYNAMIC MULTIPLIER
@@ -227,19 +322,19 @@
                         <div class="price-display-row">
                             <span style="font-size: 0.9rem; font-weight: 600; color: var(--gray-600);">Current Live Hourly Rate:</span>
                             <div class="live-price-tag">
-                                <span class="currency">$</span>
-                                <span id="live-price-val">4.50</span>
+                                <span class="currency">₹</span>
+                                <span id="live-price-val">50</span>
                                 <span class="per-unit">/ hr</span>
                             </div>
                         </div>
 
                         <!-- Range Slider -->
-                        <input type="range" class="custom-range-slider" id="pricing-slider" min="1.00" max="20.00" step="0.25" value="4.50" aria-label="Hourly price slider">
+                        <input type="range" class="custom-range-slider" id="pricing-slider" min="10" max="500" step="10" value="50" aria-label="Hourly price slider">
 
                         <div class="slider-scale-labels">
-                            <span>$1.00/hr (Min)</span>
-                            <span>$10.00/hr</span>
-                            <span>$20.00/hr (Max)</span>
+                            <span>₹10/hr (Min)</span>
+                            <span>₹250/hr</span>
+                            <span>₹500/hr (Max)</span>
                         </div>
 
                         <!-- Surge & Preset Multipliers -->
@@ -249,23 +344,12 @@
                             </span>
                         </div>
                         <div class="surge-presets-row">
-                            <button type="button" class="preset-pill surge-preset-pill active" data-multiplier="1.0">Base ($4.50)</button>
+                            <button type="button" id="base-price-preset" class="preset-pill surge-preset-pill active" data-multiplier="1.0">Base (₹50)</button>
                             <button type="button" class="preset-pill surge-preset-pill" data-multiplier="1.25">Peak Hours (+25%)</button>
                             <button type="button" class="preset-pill surge-preset-pill" data-multiplier="1.50">Weekend Surge (+50%)</button>
                             <button type="button" class="preset-pill surge-preset-pill" data-multiplier="1.75">Event Boost (+75%)</button>
                         </div>
 
-                        <!-- Live Revenue Estimator -->
-                        <div class="revenue-estimator">
-                            <div>
-                                <span style="color: var(--gray-500);">Projected Daily:</span>
-                                <span class="est-val" id="est-daily-val" style="margin-left: 4px;">$243</span>
-                            </div>
-                            <div style="border-left: 1px solid var(--gray-200); padding-left: 12px;">
-                                <span style="color: var(--gray-500);">Projected Monthly:</span>
-                                <span class="est-val" id="est-monthly-val" style="margin-left: 4px;">$6,318</span>
-                            </div>
-                        </div>
                     </div>
 
                     <button type="button" class="btn-primary" id="btn-save-rates" style="width: 100%; padding: 12px; font-size: 0.95rem;">
@@ -275,280 +359,1651 @@
 
             </div>
 
+            <!-- ==================== PARKING DETAILS ==================== -->
+            <section
+                class="panel-card"
+                id="panel-location"
+                style="margin-bottom:32px;"
+            >
 
-            <!-- ==================== CONTROL PANEL ROW 2: GOOGLE MAPS & ACCESS CONTROL ==================== -->
-            <div class="control-panel-grid">
-
-                <!-- 3. GOOGLE MAPS INTEGRATION FOR LOCATION MAPPING -->
-                <section class="panel-card" id="panel-map" aria-labelledby="map-heading">
-                    <div class="panel-card-header">
-                        <div class="panel-card-title" id="map-heading">
-                            <span>🗺️ Google Maps Location Mapping</span>
-                        </div>
-                        <div class="map-coords-badge">
-                            <span>GPS:</span>
-                            <span id="map-lat-val">40.71280</span>,
-                            <span id="map-lng-val">-74.00600</span>
-                        </div>
-                    </div>
-
-                    <div class="map-toolbar">
-                        <div style="display: flex; gap: 8px; flex: 1; max-width: 380px;">
-                            <input type="text" id="map-address-search" class="input-control" placeholder="Search address or entrance ramp..." style="min-height: 38px; padding: 6px 12px; font-size: 0.85rem;" value="123 Main Street, Downtown">
-                            <button type="button" class="btn-primary" id="btn-search-map" style="padding: 6px 14px; font-size: 0.82rem; white-space: nowrap;">
-                                Search
-                            </button>
-                        </div>
-                        <button type="button" class="btn-ghost" id="btn-save-location" style="padding: 6px 14px; font-size: 0.82rem;">
-                            Save Entrance Pin 📍
-                        </button>
-                    </div>
-
-                    <div class="map-widget-container">
-                        <!-- Google Maps Canvas Container -->
-                        <div id="owner-google-map" class="google-map-frame" style="height: 340px;"></div>
-                    </div>
-
-                    <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; color: var(--gray-500);">
-                        <span>💡 Tip: Drag the pin on the map to place your parking garage entrance gate accurately.</span>
-                        <span style="font-weight: 600; color: var(--navy-800);">MapId: DEMO_MAP_ID</span>
-                    </div>
-                </section>
-
-
-                <!-- 4. ACCESS CONTROL (Gate Code & Barrier API) -->
-                <section class="panel-card" id="panel-access" aria-labelledby="access-heading">
-                    <div class="panel-card-header">
-                        <div class="panel-card-title" id="access-heading">
-                            <span>🔐 Access Control &amp; Gate Key API</span>
-                        </div>
-                        <span class="status-badge parked" style="font-size: 0.75rem;">CONNECTED</span>
-                    </div>
-
-                    <div class="access-control-box">
-                        <div class="access-card-inner">
-                            <span style="font-size: 0.82rem; font-weight: 600; color: var(--gray-500); text-transform: uppercase;">
-                                Active Gate PIN Code
-                            </span>
-                            <div class="gate-code-display" id="dash-gate-code">8492#</div>
-                            <button type="button" class="btn-ghost" id="btn-regen-gate-code" style="font-size: 0.78rem; padding: 6px 12px;">
-                                🔄 Generate New PIN
-                            </button>
-                        </div>
-
-                        <div class="access-card-inner">
-                            <span style="font-size: 0.82rem; font-weight: 600; color: var(--gray-500); text-transform: uppercase;">
-                                Smart Barrier Status
-                            </span>
-                            <div>
-                                <span class="barrier-status-indicator locked" id="barrier-status-indicator">
-                                    <span>🔒 Barrier Locked</span>
-                                </span>
-                            </div>
-                            <button type="button" class="btn-primary" id="btn-trigger-barrier" style="font-size: 0.78rem; padding: 8px 16px; margin-top: 6px;">
-                                Trigger Barrier Gate
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- API / Webhook Integration Key -->
-                    <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 14px 16px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                            <span style="font-size: 0.82rem; font-weight: 700; color: var(--navy-900);">Barrier IoT Webhook Endpoint</span>
-                            <button type="button" class="btn-action-sm" id="btn-copy-api-key" style="margin: 0; font-size: 0.74rem;">
-                                Copy API Key
-                            </button>
-                        </div>
-                        <code style="font-size: 0.76rem; color: var(--navy-700); word-break: break-all; font-family: monospace;">
-                            https://api.parksmart.io/v1/barrier/access?key=pk_live_sec_9942a78f0b12c
-                        </code>
-                    </div>
-                </section>
-
-            </div>
-
-
-            <!-- ==================== BOOKING MANAGEMENT & CANCELLATIONS ==================== -->
-            <section class="panel-card" id="panel-bookings" aria-labelledby="bookings-heading" style="margin-bottom: 32px;">
                 <div class="panel-card-header">
+
+                    <div class="panel-card-title">
+                        <span>
+                            📍 Parking Location & Vehicle Capacity
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <div class="dash-metrics-grid">
+
                     <div>
-                        <div class="panel-card-title" id="bookings-heading">
-                            <span>📋 Booking Management &amp; Cancellations</span>
+                        <span class="metric-label">
+                            Address
+                        </span>
+
+                        <div
+                            id="detail-location-address"
+                            style="font-weight:700;"
+                        >
+                            —
                         </div>
-                        <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 4px;">
-                            Live monitoring of incoming drivers, active parking vehicles, check-in validations, and cancellations.
+                    </div>
+
+
+                    <div>
+                        <span class="metric-label">
+                            City / PIN
+                        </span>
+
+                        <div
+                            id="detail-location-city"
+                            style="font-weight:700;"
+                        >
+                            —
+                        </div>
+                    </div>
+
+
+                    <div>
+                        <span class="metric-label">
+                            GPS Coordinates
+                        </span>
+
+                        <div
+                            id="detail-location-coordinates"
+                            style="font-weight:700;"
+                        >
+                            —
+                        </div>
+                    </div>
+
+
+                    <div>
+                        <span class="metric-label">
+                            Entrance
+                        </span>
+
+                        <div
+                            id="detail-access-gate"
+                            style="font-weight:700;"
+                        >
+                            —
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="dash-metrics-grid"
+                    style="margin-top:20px;"
+                >
+
+                    <div>
+                        <span class="metric-label">
+                            Standard Cars
+                        </span>
+                        <div
+                            id="detail-standard-bays"
+                            class="metric-value"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="metric-label">
+                            Compact Cars
+                        </span>
+                        <div
+                            id="detail-compact-bays"
+                            class="metric-value"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="metric-label">
+                            EV Cars
+                        </span>
+                        <div
+                            id="detail-ev-bays"
+                            class="metric-value"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="metric-label">
+                            Motorcycles
+                        </span>
+                        <div
+                            id="detail-motorcycle-bays"
+                            class="metric-value"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="metric-label">
+                            Scooters / Scooties
+                        </span>
+                        <div
+                            id="detail-scooter-bays"
+                            class="metric-value"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- ==================== OPERATING HOURS ==================== -->
+
+            <section
+                class="panel-card"
+                id="panel-operating-hours"
+                style="margin-bottom:32px;"
+            >
+
+                <div class="panel-card-header">
+
+                    <div>
+                        <div class="panel-card-title">
+                            <span>🕒 Operating Hours</span>
+                        </div>
+
+                        <p
+                            style="
+                                font-size:.85rem;
+                                color:var(--text-secondary);
+                                margin-top:4px;
+                            "
+                        >
+                            Choose exactly when drivers are allowed to reserve this parking facility.
                         </p>
                     </div>
-                    <button type="button" class="btn-primary" id="btn-add-walkin" style="font-size: 0.85rem; padding: 8px 16px;">
-                        + Register Walk-In Renter
+
+                    <span
+                        id="operating-hours-summary"
+                        class="space-select-pill"
+                    >
+                        Custom Schedule
+                    </span>
+
+                </div>
+
+
+                <!-- QUICK ACTIONS -->
+
+                <div class="operating-hours-quick-actions">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="hours-set-24-7"
+                    >
+                        Open 24/7
                     </button>
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="hours-business"
+                    >
+                        Mon–Fri 06:00–22:00
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="hours-close-weekends"
+                    >
+                        Close Weekends
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="hours-copy-monday"
+                    >
+                        Copy Monday to Weekdays
+                    </button>
+
                 </div>
 
-                <!-- Table Filter Pills & Search -->
-                <div class="table-filter-bar">
+
+                <div class="operating-hours-table-header">
+
+                    <span>Day</span>
+                    <span>Status</span>
+                    <span>Opening</span>
+                    <span>Closing</span>
+                    <span>24 Hours</span>
+
+                </div>
+
+
+                <div id="owner-operating-hours-list">
+
+                    <!-- MONDAY -->
+                    <div class="operating-hours-row" data-day="1">
+
+                        <strong>Monday</strong>
+
+                        <label class="day-status-control">
+                            <input
+                                type="checkbox"
+                                class="operating-closed"
+                            >
+                            <span class="day-status-text">
+                                Open
+                            </span>
+                        </label>
+
+                        <input
+                            type="time"
+                            class="operating-open input-control"
+                            value="06:00"
+                        >
+
+                        <input
+                            type="time"
+                            class="operating-close input-control"
+                            value="22:00"
+                        >
+
+                        <label class="hours-24-control">
+                            <input
+                                type="checkbox"
+                                class="operating-24-hours"
+                            >
+                            <span>24h</span>
+                        </label>
+
+                    </div>
+
+
+                    <!-- TUESDAY -->
+                    <div class="operating-hours-row" data-day="2">
+
+                        <strong>Tuesday</strong>
+
+                        <label class="day-status-control">
+                            <input
+                                type="checkbox"
+                                class="operating-closed"
+                            >
+                            <span class="day-status-text">
+                                Open
+                            </span>
+                        </label>
+
+                        <input
+                            type="time"
+                            class="operating-open input-control"
+                            value="06:00"
+                        >
+
+                        <input
+                            type="time"
+                            class="operating-close input-control"
+                            value="22:00"
+                        >
+
+                        <label class="hours-24-control">
+                            <input
+                                type="checkbox"
+                                class="operating-24-hours"
+                            >
+                            <span>24h</span>
+                        </label>
+
+                    </div>
+
+
+                    <!-- WEDNESDAY -->
+                    <div class="operating-hours-row" data-day="3">
+
+                        <strong>Wednesday</strong>
+
+                        <label class="day-status-control">
+                            <input
+                                type="checkbox"
+                                class="operating-closed"
+                            >
+                            <span class="day-status-text">
+                                Open
+                            </span>
+                        </label>
+
+                        <input
+                            type="time"
+                            class="operating-open input-control"
+                            value="06:00"
+                        >
+
+                        <input
+                            type="time"
+                            class="operating-close input-control"
+                            value="22:00"
+                        >
+
+                        <label class="hours-24-control">
+                            <input
+                                type="checkbox"
+                                class="operating-24-hours"
+                            >
+                            <span>24h</span>
+                        </label>
+
+                    </div>
+
+
+                    <!-- THURSDAY -->
+                    <div class="operating-hours-row" data-day="4">
+
+                        <strong>Thursday</strong>
+
+                        <label class="day-status-control">
+                            <input
+                                type="checkbox"
+                                class="operating-closed"
+                            >
+                            <span class="day-status-text">
+                                Open
+                            </span>
+                        </label>
+
+                        <input
+                            type="time"
+                            class="operating-open input-control"
+                            value="06:00"
+                        >
+
+                        <input
+                            type="time"
+                            class="operating-close input-control"
+                            value="22:00"
+                        >
+
+                        <label class="hours-24-control">
+                            <input
+                                type="checkbox"
+                                class="operating-24-hours"
+                            >
+                            <span>24h</span>
+                        </label>
+
+                    </div>
+
+
+                    <!-- FRIDAY -->
+                    <div class="operating-hours-row" data-day="5">
+
+                        <strong>Friday</strong>
+
+                        <label class="day-status-control">
+                            <input
+                                type="checkbox"
+                                class="operating-closed"
+                            >
+                            <span class="day-status-text">
+                                Open
+                            </span>
+                        </label>
+
+                        <input
+                            type="time"
+                            class="operating-open input-control"
+                            value="06:00"
+                        >
+
+                        <input
+                            type="time"
+                            class="operating-close input-control"
+                            value="22:00"
+                        >
+
+                        <label class="hours-24-control">
+                            <input
+                                type="checkbox"
+                                class="operating-24-hours"
+                            >
+                            <span>24h</span>
+                        </label>
+
+                    </div>
+
+
+                    <!-- SATURDAY -->
+                    <div class="operating-hours-row" data-day="6">
+
+                        <strong>Saturday</strong>
+
+                        <label class="day-status-control">
+                            <input
+                                type="checkbox"
+                                class="operating-closed"
+                            >
+                            <span class="day-status-text">
+                                Open
+                            </span>
+                        </label>
+
+                        <input
+                            type="time"
+                            class="operating-open input-control"
+                            value="08:00"
+                        >
+
+                        <input
+                            type="time"
+                            class="operating-close input-control"
+                            value="23:00"
+                        >
+
+                        <label class="hours-24-control">
+                            <input
+                                type="checkbox"
+                                class="operating-24-hours"
+                            >
+                            <span>24h</span>
+                        </label>
+
+                    </div>
+
+
+                    <!-- SUNDAY -->
+                    <div class="operating-hours-row" data-day="0">
+
+                        <strong>Sunday</strong>
+
+                        <label class="day-status-control">
+                            <input
+                                type="checkbox"
+                                class="operating-closed"
+                            >
+                            <span class="day-status-text">
+                                Open
+                            </span>
+                        </label>
+
+                        <input
+                            type="time"
+                            class="operating-open input-control"
+                            value="08:00"
+                        >
+
+                        <input
+                            type="time"
+                            class="operating-close input-control"
+                            value="23:00"
+                        >
+
+                        <label class="hours-24-control">
+                            <input
+                                type="checkbox"
+                                class="operating-24-hours"
+                            >
+                            <span>24h</span>
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="operating-hours-footer">
+
+                    <small>
+                        Overnight schedules are supported. Example:
+                        19:00 → 07:00 means the parking facility stays open overnight.
+                    </small>
+
+                    <button
+                        type="button"
+                        id="btn-save-operating-hours"
+                        class="btn-primary"
+                    >
+                        Save Operating Hours
+                    </button>
+
+                </div>
+
+            </section>
+
+            <!-- ==================== PARKING IMAGES ==================== -->
+
+            <section
+                class="panel-card"
+                id="panel-parking-images"
+                style="margin-bottom:32px;"
+            >
+
+                <div class="panel-card-header">
+
+                    <div>
+
+                        <div class="panel-card-title">
+                            <span>
+                                📷 Parking Images
+                            </span>
+                        </div>
+
+                        <p
+                            style="
+                                font-size:.85rem;
+                                color:var(--text-secondary);
+                                margin-top:4px;
+                            "
+                        >
+                            Upload real photos for the currently selected parking facility.
+                        </p>
+
+                    </div>
+
+                    <span
+                        id="owner-parking-image-count"
+                        class="space-select-pill"
+                    >
+                        0 Images
+                    </span>
+
+                </div>
+
+
+                <input
+                    type="file"
+                    id="dashboard-parking-image-input"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    style="display:none;"
+                >
+
+
+                <button
+                    type="button"
+                    id="btn-upload-parking-images"
+                    class="btn-secondary"
+                    style="margin-bottom:18px;"
+                >
+                    ＋ Add Parking Images
+                </button>
+
+
+                <div
+                    id="owner-parking-images-empty"
+                    style="
+                        padding:30px 20px;
+                        text-align:center;
+                        color:var(--text-secondary);
+                    "
+                >
+                    No parking images uploaded yet.
+                </div>
+
+
+                <div
+                    id="owner-parking-images-grid"
+                    class="photo-preview-grid"
+                >
+                </div>
+
+            </section>
+
+            <!-- ==================== BOOKING MANAGEMENT ==================== -->
+            <section
+                class="panel-card"
+                id="panel-bookings"
+                style="margin-bottom:32px;"
+            >
+
+                <div class="panel-card-header">
+
+                    <div>
+
+                        <div class="panel-card-title">
+                            <span>
+                                📋 Booking Management
+                            </span>
+                        </div>
+
+                        <p
+                            style="
+                                font-size:0.85rem;
+                                color:var(--text-secondary);
+                                margin-top:4px;
+                            "
+                        >
+                            Real reservations for the currently selected
+                            parking space.
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        id="owner-booking-count"
+                        class="space-select-pill"
+                    >
+                        0 Bookings
+                    </div>
+
+                </div>
+
+
+                <!-- BOOKING FILTERS -->
+                <div
+                    id="owner-booking-filters"
+                    class="table-filter-bar"
+                    style="margin-bottom:18px;"
+                >
+
                     <div class="table-filter-pills">
-                        <button type="button" class="table-pill-btn active" data-filter="all">All Bookings</button>
-                        <button type="button" class="table-pill-btn" data-filter="parked">Parked (Active)</button>
-                        <button type="button" class="table-pill-btn" data-filter="reserved">Upcoming Reservations</button>
-                        <button type="button" class="table-pill-btn" data-filter="completed">Completed</button>
-                        <button type="button" class="table-pill-btn" data-filter="cancelled">Cancelled</button>
+
+                        <button
+                            type="button"
+                            class="table-pill-btn active"
+                            data-booking-filter="all"
+                        >
+                            All
+                        </button>
+
+                        <button
+                            type="button"
+                            class="table-pill-btn"
+                            data-booking-filter="upcoming"
+                        >
+                            Upcoming
+                        </button>
+
+                        <button
+                            type="button"
+                            class="table-pill-btn"
+                            data-booking-filter="active"
+                        >
+                            Active
+                        </button>
+
+                        <button
+                            type="button"
+                            class="table-pill-btn"
+                            data-booking-filter="completed"
+                        >
+                            Completed
+                        </button>
+
+                        <button
+                            type="button"
+                            class="table-pill-btn"
+                            data-booking-filter="cancelled"
+                        >
+                            Cancelled
+                        </button>
+
                     </div>
 
-                    <div style="position: relative; min-width: 240px;">
-                        <input type="text" id="booking-search-input" class="input-control" placeholder="Search driver, plate, or ID..." style="min-height: 38px; padding: 6px 14px; font-size: 0.85rem;">
+
+                    <div style="min-width:240px;">
+
+                        <input
+                            type="search"
+                            id="owner-booking-search"
+                            class="input-control"
+                            placeholder="Search driver, vehicle or booking..."
+                            autocomplete="off"
+                            style="
+                                min-height:38px;
+                                padding:7px 12px;
+                                font-size:0.85rem;
+                            "
+                        >
+
                     </div>
+
                 </div>
 
-                <!-- Responsive Bookings Table -->
-                <div class="responsive-table-wrapper">
+
+                <!-- LOADING -->
+                <div
+                    id="owner-bookings-loading"
+                    style="
+                        display:none;
+                        text-align:center;
+                        padding:35px 20px;
+                        color:var(--text-secondary);
+                    "
+                >
+                    Loading bookings...
+                </div>
+
+
+                <!-- EMPTY STATE -->
+                <div
+                    id="owner-bookings-empty"
+                    style="
+                        text-align:center;
+                        padding:44px 20px;
+                        color:var(--text-secondary);
+                    "
+                >
+
+                    <div
+                        style="
+                            font-size:2rem;
+                            margin-bottom:10px;
+                        "
+                    >
+                        🅿️
+                    </div>
+
+                    <strong
+                        style="
+                            display:block;
+                            color:var(--text-primary);
+                            margin-bottom:6px;
+                        "
+                    >
+                        No bookings yet
+                    </strong>
+
+                    <span id="owner-bookings-empty-text">
+                        Reservations for this parking space
+                        will appear here.
+                    </span>
+
+                </div>
+
+
+                <!-- REAL BOOKINGS TABLE -->
+                <div
+                    id="owner-bookings-table-wrapper"
+                    class="responsive-table-wrapper"
+                    style="display:none;"
+                >
+
                     <table class="dashboard-table">
+
                         <thead>
                             <tr>
-                                <th>Driver &amp; Booking ID</th>
-                                <th>License Plate</th>
-                                <th>Assigned Bay</th>
-                                <th>Time Slot &amp; Vehicle</th>
-                                <th>Gross Total</th>
+                                <th>Driver</th>
+                                <th>Vehicle</th>
+                                <th>Booking</th>
+                                <th>Schedule</th>
+                                <th>Bay</th>
+                                <th>Amount</th>
                                 <th>Status</th>
-                                <th>Host Actions</th>
+                                <th>Payment</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="bookings-table-body">
-                            <!-- Populated dynamically by owner.js -->
+
+                        <tbody id="owner-bookings-table-body">
                         </tbody>
+
                     </table>
+
                 </div>
+
             </section>
 
 
             <!-- ==================== EARNINGS & PAYMENT HISTORY ==================== -->
-            <section class="panel-card" id="panel-earnings" aria-labelledby="earnings-heading" style="margin-bottom: 40px;">
+
+            <section
+                class="panel-card"
+                id="panel-earnings"
+                style="margin-bottom:40px;"
+            >
+
                 <div class="panel-card-header">
+
                     <div>
-                        <div class="panel-card-title" id="earnings-heading">
-                            <span>💳 Earnings &amp; Payment History</span>
+
+                        <div class="panel-card-title">
+
+                            <span>
+                                💳 Earnings & Payment History
+                            </span>
+
                         </div>
-                        <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 4px;">
-                            Transparent financial records, platform commission splits, and automated bank payouts.
+
+
+                        <p
+                            style="
+                                font-size:0.85rem;
+                                color:var(--gray-500);
+                                margin-top:4px;
+                            "
+                        >
+                            Revenue recorded from successfully paid
+                            ParkSmart bookings.
                         </p>
+
                     </div>
-                    <button type="button" class="btn-primary" onclick="showToast('Payout of $785.00 scheduled to your linked bank account!', 'success')" style="font-size: 0.85rem; padding: 8px 18px;">
-                        Request Instant Payout ($785.00)
-                    </button>
+
+
+                    <span
+                        id="owner-payment-count"
+                        class="space-select-pill"
+                    >
+                        0 Paid Transactions
+                    </span>
+
                 </div>
 
-                <div class="dash-metrics-grid" style="margin-bottom: 20px;">
-                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
-                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">Today's Net</span>
-                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--navy-900);">$149.04</div>
-                        <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">After 8% platform fee</span>
+
+                <!-- ==================== EARNINGS METRICS ==================== -->
+
+                <div class="dash-metrics-grid">
+
+                    <div>
+
+                        <span class="metric-label">
+                            Today's Earnings
+                        </span>
+
+                        <div
+                            class="metric-value"
+                            id="owner-today-earnings"
+                        >
+                            ₹0.00
+                        </div>
+
                     </div>
-                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
-                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">This Month</span>
-                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--navy-900);">$3,201.60</div>
-                        <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">142 total bookings</span>
+
+
+                    <div>
+
+                        <span class="metric-label">
+                            This Month
+                        </span>
+
+                        <div
+                            class="metric-value"
+                            id="owner-month-earnings"
+                        >
+                            ₹0.00
+                        </div>
+
                     </div>
-                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
-                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">Available Payout</span>
-                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent);">$785.00</div>
-                        <span style="font-size: 0.75rem; color: var(--gray-500);">Auto-deposits Friday</span>
+
+
+                    <div>
+
+                        <span class="metric-label">
+                            Total Paid Revenue
+                        </span>
+
+                        <div
+                            class="metric-value"
+                            id="owner-total-paid-revenue"
+                        >
+                            ₹0.00
+                        </div>
+
                     </div>
-                    <div style="padding: 16px; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
-                        <span style="font-size: 0.78rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase;">Platform Fee</span>
-                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--gray-700);">8.0%</div>
-                        <span style="font-size: 0.75rem; color: var(--gray-500);">Industry lowest rate</span>
-                    </div>
+
                 </div>
 
-                <div class="responsive-table-wrapper">
+
+                <!-- ==================== LOADING ==================== -->
+
+                <div
+                    id="owner-payments-loading"
+                    style="
+                        padding:24px 10px;
+                        text-align:center;
+                        color:var(--gray-500);
+                        display:none;
+                    "
+                >
+                    Loading payment history...
+                </div>
+
+
+                <!-- ==================== EMPTY STATE ==================== -->
+
+                <div
+                    id="owner-payments-empty"
+                    style="
+                        text-align:center;
+                        padding:36px 20px;
+                        color:var(--gray-500);
+                    "
+                >
+
+                    <strong
+                        style="
+                            display:block;
+                            color:var(--navy-900);
+                            margin-bottom:6px;
+                        "
+                    >
+                        No payment history yet
+                    </strong>
+
+                    <span>
+                        Successful and attempted booking payments
+                        will appear here.
+                    </span>
+
+                </div>
+
+
+                <!-- ==================== PAYMENT TABLE ==================== -->
+
+                <div
+                    id="owner-payments-table-wrapper"
+                    class="responsive-table-wrapper"
+                    style="
+                        display:none;
+                        margin-top:20px;
+                    "
+                >
+
                     <table class="dashboard-table">
+
                         <thead>
+
                             <tr>
-                                <th>Transaction Ref</th>
-                                <th>Settlement Date</th>
-                                <th>Payout Destination</th>
-                                <th>Gross Revenue</th>
-                                <th>Platform Split (8%)</th>
-                                <th>Net Payout</th>
+                                <th>Booking</th>
+                                <th>Driver</th>
+                                <th>Parking Space</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Paid At</th>
                                 <th>Status</th>
                             </tr>
+
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td><code>TRX-99214</code></td>
-                                <td>September 8, 2026</td>
-                                <td>Chase Bank ****4129</td>
-                                <td>$850.00</td>
-                                <td>-$68.00</td>
-                                <td><strong>$782.00</strong></td>
-                                <td><span class="status-badge parked">PAID</span></td>
-                            </tr>
-                            <tr>
-                                <td><code>TRX-98402</code></td>
-                                <td>September 1, 2026</td>
-                                <td>Chase Bank ****4129</td>
-                                <td>$920.00</td>
-                                <td>-$73.60</td>
-                                <td><strong>$846.40</strong></td>
-                                <td><span class="status-badge parked">PAID</span></td>
-                            </tr>
-                            <tr>
-                                <td><code>TRX-97655</code></td>
-                                <td>August 25, 2026</td>
-                                <td>Chase Bank ****4129</td>
-                                <td>$790.00</td>
-                                <td>-$63.20</td>
-                                <td><strong>$726.80</strong></td>
-                                <td><span class="status-badge parked">PAID</span></td>
-                            </tr>
+
+
+                        <tbody
+                            id="owner-payments-table-body"
+                        >
                         </tbody>
+
                     </table>
+
                 </div>
+
             </section>
 
         </div>
     </main>
 
-    <!-- ==================== MODAL: UPDATE SPOT DETAILS ==================== -->
-    <div class="owner-modal-backdrop" id="edit-spot-modal">
-        <div class="owner-modal-card">
-            <div class="owner-modal-header">
-                <h3>Update Parking Space Details</h3>
-                <button type="button" class="btn-close-modal" id="btn-close-edit-modal">✕</button>
-            </div>
-            <form id="edit-spot-form">
-                <div class="form-group">
-                    <label for="edit-name">Space Display Name</label>
-                    <input type="text" id="edit-name" class="input-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-address">Physical Address</label>
-                    <input type="text" id="edit-address" class="input-control" required>
-                </div>
-                <div class="form-grid-2">
-                    <div class="form-group">
-                        <label for="edit-capacity">Total Spot Capacity</label>
-                        <input type="number" id="edit-capacity" class="input-control" min="1" max="1000" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-rate">Default Base Rate ($/hr)</label>
-                        <input type="number" id="edit-rate" class="input-control" step="0.25" min="0.50" required>
-                    </div>
-                </div>
-                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-                    <button type="button" class="btn-ghost" onclick="document.getElementById('edit-spot-modal').classList.remove('active')">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn-primary">
-                        Save Changes
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+            <!-- ==================== EDIT PARKING SPACE MODAL ==================== -->
 
-    <!-- Google Maps Platform Loader (async script) -->
-    <script async src="https://maps.googleapis.com/maps/api/js?key=&libraries=places,marker&callback=Function.prototype"></script>
-    <script src="owner.js"></script>
+            <div
+                id="edit-space-overlay"
+                style="
+                    display:none;
+                    position:fixed;
+                    inset:0;
+                    z-index:9999;
+                    background:rgba(15,23,42,.68);
+                    padding:24px;
+                    overflow:auto;
+                "
+            >
+                <div
+                    style="
+                        width:min(760px,100%);
+                        margin:40px auto;
+                        background:var(--card-bg,#fff);
+                        color:var(--text-primary,#111827);
+                        border-radius:18px;
+                        padding:28px;
+                        box-shadow:0 24px 70px rgba(0,0,0,.28);
+                    "
+                >
+
+                    <div
+                        style="
+                            display:flex;
+                            justify-content:space-between;
+                            align-items:center;
+                            gap:20px;
+                            margin-bottom:24px;
+                        "
+                    >
+                        <div>
+                            <h2 style="margin:0;">
+                                Edit Parking Space
+                            </h2>
+
+                            <p
+                                style="
+                                    margin:6px 0 0;
+                                    color:var(--text-secondary);
+                                "
+                            >
+                                Update the currently selected parking facility.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            id="edit-space-close"
+                            aria-label="Close"
+                            style="
+                                border:0;
+                                background:transparent;
+                                font-size:1.6rem;
+                                cursor:pointer;
+                            "
+                        >
+                            ×
+                        </button>
+                    </div>
+
+
+                    <form id="edit-space-form">
+
+                        <div
+                            style="
+                                display:grid;
+                                grid-template-columns:repeat(
+                                    auto-fit,
+                                    minmax(220px,1fr)
+                                );
+                                gap:16px;
+                            "
+                        >
+
+                            <div>
+                                <label for="edit-space-name">
+                                    Parking Name
+                                </label>
+
+                                <input
+                                    id="edit-space-name"
+                                    class="input-control"
+                                    type="text"
+                                    required
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-type">
+                                    Parking Type
+                                </label>
+
+                                <select
+                                    id="edit-space-type"
+                                    class="input-control"
+                                    required
+                                >
+                                    <option value="open">Open</option>
+                                    <option value="covered">Covered</option>
+                                    <option value="underground">Underground</option>
+                                    <option value="multi_level">Multi Level</option>
+                                    <option value="private">Private</option>
+                                    <option value="ev">EV Parking</option>
+                                    <option value="valet">Valet</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+
+                            <div style="grid-column:1/-1;">
+                                <label for="edit-space-address">
+                                    Address
+                                </label>
+
+                                <input
+                                    id="edit-space-address"
+                                    class="input-control"
+                                    type="text"
+                                    required
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-city">
+                                    City
+                                </label>
+
+                                <input
+                                    id="edit-space-city"
+                                    class="input-control"
+                                    type="text"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-postal-code">
+                                    PIN Code
+                                </label>
+
+                                <input
+                                    id="edit-space-postal-code"
+                                    class="input-control"
+                                    type="text"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-access-gate">
+                                    Entrance / Gate
+                                </label>
+
+                                <input
+                                    id="edit-space-access-gate"
+                                    class="input-control"
+                                    type="text"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-schedule">
+                                    Operating Schedule
+                                </label>
+
+                                <select
+                                    id="edit-space-schedule"
+                                    class="input-control"
+                                >
+                                    <option value="24-7">24/7</option>
+                                    <option value="business">Business Hours</option>
+                                    <option value="night">Night</option>
+                                    <option value="weekend">Weekend</option>
+                                </select>
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-latitude">
+                                    Latitude
+                                </label>
+
+                                <input
+                                    id="edit-space-latitude"
+                                    class="input-control"
+                                    type="number"
+                                    step="any"
+                                    required
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-longitude">
+                                    Longitude
+                                </label>
+
+                                <input
+                                    id="edit-space-longitude"
+                                    class="input-control"
+                                    type="number"
+                                    step="any"
+                                    required
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-capacity">
+                                    Total Capacity
+                                </label>
+
+                                <input
+                                    id="edit-space-capacity"
+                                    class="input-control"
+                                    type="number"
+                                    min="1"
+                                    required
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-standard-bays">
+                                    Standard Car Bays
+                                </label>
+
+                                <input
+                                    id="edit-standard-bays"
+                                    class="input-control"
+                                    type="number"
+                                    min="0"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-ev-bays">
+                                    EV Car Bays
+                                </label>
+
+                                <input
+                                    id="edit-ev-bays"
+                                    class="input-control"
+                                    type="number"
+                                    min="0"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-motorcycle-bays">
+                                    Motorcycle Bays
+                                </label>
+
+                                <input
+                                    id="edit-motorcycle-bays"
+                                    class="input-control"
+                                    type="number"
+                                    min="0"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-scooter-bays">
+                                    Scooter Bays
+                                </label>
+
+                                <input
+                                    id="edit-scooter-bays"
+                                    class="input-control"
+                                    type="number"
+                                    min="0"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-rate">
+                                    Hourly Rate ₹
+                                </label>
+
+                                <input
+                                    id="edit-space-rate"
+                                    class="input-control"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-space-daily-max">
+                                    Daily Maximum ₹
+                                </label>
+
+                                <input
+                                    id="edit-space-daily-max"
+                                    class="input-control"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                >
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            style="
+                                display:flex;
+                                justify-content:flex-end;
+                                gap:12px;
+                                margin-top:26px;
+                            "
+                        >
+
+                            <button
+                                type="button"
+                                id="edit-space-cancel"
+                                class="btn-secondary"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="submit"
+                                id="edit-space-save"
+                                class="btn-primary"
+                            >
+                                Save Changes
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- ==================== OWNER PROFILE MODAL ==================== -->
+
+            <div
+                id="owner-profile-overlay"
+                style="
+                    display:none;
+                    position:fixed;
+                    inset:0;
+                    z-index:10000;
+                    background:rgba(15,23,42,.68);
+                    padding:24px;
+                    overflow:auto;
+                "
+            >
+                <div
+                    style="
+                        width:min(540px,100%);
+                        margin:60px auto;
+                        background:var(--card-bg,#fff);
+                        color:var(--text-primary,#111827);
+                        border-radius:18px;
+                        padding:28px;
+                        box-shadow:0 24px 70px rgba(0,0,0,.28);
+                    "
+                >
+
+                    <div
+                        style="
+                            display:flex;
+                            justify-content:space-between;
+                            align-items:center;
+                            gap:16px;
+                            margin-bottom:24px;
+                        "
+                    >
+
+                        <div>
+                            <h2 style="margin:0;">
+                                Owner Profile
+                            </h2>
+
+                            <p
+                                style="
+                                    margin:6px 0 0;
+                                    color:var(--text-secondary);
+                                "
+                            >
+                                Manage your ParkSmart owner account.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            id="owner-profile-close"
+                            aria-label="Close"
+                            style="
+                                border:0;
+                                background:transparent;
+                                font-size:1.6rem;
+                                cursor:pointer;
+                            "
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+
+                    <form id="owner-profile-form">
+
+                        <div style="margin-bottom:16px;">
+
+                            <label for="owner-profile-name">
+                                Full Name
+                            </label>
+
+                            <input
+                                id="owner-profile-name"
+                                class="input-control"
+                                type="text"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div style="margin-bottom:16px;">
+
+                            <label for="owner-profile-email">
+                                Email Address
+                            </label>
+
+                            <input
+                                id="owner-profile-email"
+                                class="input-control"
+                                type="email"
+                                readonly
+                            >
+
+                            <small
+                                id="owner-profile-email-status"
+                                style="
+                                    display:block;
+                                    margin-top:6px;
+                                    color:var(--text-secondary);
+                                "
+                            >
+                            </small>
+
+                        </div>
+
+
+                        <div style="margin-bottom:16px;">
+
+                            <label for="owner-profile-phone">
+                                Phone Number
+                            </label>
+
+                            <input
+                                id="owner-profile-phone"
+                                class="input-control"
+                                type="tel"
+                                autocomplete="tel"
+                            >
+
+                            <small
+                                id="owner-profile-phone-status"
+                                style="
+                                    display:block;
+                                    margin-top:6px;
+                                    color:var(--text-secondary);
+                                "
+                            >
+                            </small>
+
+                        </div>
+
+
+                        <div
+                            style="
+                                padding:12px 14px;
+                                margin-bottom:20px;
+                                border-radius:10px;
+                                background:var(--gray-50);
+                                border:1px solid var(--gray-200);
+                                color:var(--text-secondary);
+                                font-size:.85rem;
+                                line-height:1.5;
+                            "
+                        >
+                            Email changes require a separate verification flow.
+                            Password recovery will be available through Forgot Password.
+                        </div>
+
+
+                        <div
+                            style="
+                                display:flex;
+                                justify-content:flex-end;
+                                gap:12px;
+                            "
+                        >
+
+                            <button
+                                type="button"
+                                id="owner-profile-cancel"
+                                class="btn-secondary"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="submit"
+                                id="owner-profile-save"
+                                class="btn-primary"
+                            >
+                                Save Profile
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- OWNER ACCOUNT CONTROL -->
+            <!-- ======================================== -->
+
+            <div
+                id="owner-account-dock"
+                class="owner-account-dock"
+            >
+
+                <button
+                    type="button"
+                    id="owner-account-button"
+                    class="owner-account-button"
+                    aria-label="Open owner account menu"
+                    aria-expanded="false"
+                >
+
+                    <div
+                        id="dock-owner-avatar"
+                        class="owner-dock-avatar"
+                    >
+                        HM
+                    </div>
+
+                </button>
+
+
+                <div
+                    id="owner-account-menu"
+                    class="owner-account-menu"
+                >
+
+                    <!-- OWNER IDENTITY -->
+                    <div class="owner-menu-profile">
+
+                        <div
+                            id="owner-menu-avatar"
+                            class="owner-menu-profile-avatar"
+                        >
+                            HM
+                        </div>
+
+                        <div class="owner-menu-profile-text">
+
+                            <strong id="owner-menu-name">
+                                Parking Owner
+                            </strong>
+
+                            <span>
+                                ParkSmart Owner Portal
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="owner-menu-divider"></div>
+
+
+                    <button
+                        type="button"
+                        id="dock-profile"
+                        class="owner-menu-item"
+                    >
+                        <span>◉</span>
+                        <span>Owner Profile</span>
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="dock-theme-toggle"
+                        class="owner-menu-item"
+                    >
+                        <span>🌙</span>
+                        <span>Dark Mode</span>
+                    </button>
+
+
+                    <a
+                        href="/pages/owner.html#apply-section"
+                        class="owner-menu-item"
+                    >
+                        <span>＋</span>
+                        <span>List Another Space</span>
+                    </a>
+
+
+                    <button
+                        type="button"
+                        id="dock-account-settings"
+                        class="owner-menu-item"
+                    >
+                        <span>⚙</span>
+                        <span>Account Settings</span>
+                    </button>
+
+
+                    <div class="owner-menu-divider"></div>
+
+
+                    <button
+                        type="button"
+                        id="dock-help"
+                        class="owner-menu-item"
+                    >
+                        <span>?</span>
+                        <span>Help</span>
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="dock-sign-out"
+                        class="owner-menu-item menu-danger"
+                    >
+                        <span>↪</span>
+                        <span>Sign Out</span>
+                    </button>
+
+                </div>
+
+            </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/owner.js"></script>
 </body>
 </html>

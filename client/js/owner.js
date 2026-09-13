@@ -1,1701 +1,8059 @@
-/* ============================================
-   ParkSmart — Owner Portal & Dashboard JavaScript
-   Strict Route Protection, Bcrypt & JWT Security,
-   Google Places Autocomplete & Active Control Panel
-   ============================================ */
+let authenticatedOwner = null;
 
-// ============================================
-// 1. CRYPTOGRAPHIC SECURITY SIMULATION (Bcrypt & JWT)
-// ============================================
+let pendingParkingLocation = {
+    latitude: null,
+    longitude: null,
+};
 
-const BCRYPT_SALT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
-
-/**
- * Mock Bcrypt Hashing Function
- * Generates standard 60-character bcrypt string: $2a$12$[22 salt][31 hash]
- */
-function mockBcryptHash(plainPassword) {
-    if (!plainPassword) return "";
-    let salt = "";
-    for (let i = 0; i < 22; i++) {
-        salt += BCRYPT_SALT_CHARS.charAt(Math.floor(Math.random() * BCRYPT_SALT_CHARS.length));
+async function refreshAuthenticatedOwner() {
+    if (
+        typeof window === 'undefined' ||
+        !window.ParkSmartAPI ||
+        !ParkSmartAPI.getAuthToken()
+    ) {
+        authenticatedOwner = null;
+        return null;
     }
-    let hash = "";
-    for (let i = 0; i < 31; i++) {
-        const code = (plainPassword.charCodeAt(i % plainPassword.length) * 31 + salt.charCodeAt(i % 22) * 17 + i * 13) % BCRYPT_SALT_CHARS.length;
-        hash += BCRYPT_SALT_CHARS.charAt(code);
-    }
-    return `$2a$12$${salt}${hash}`;
-}
 
-/**
- * Mock Bcrypt Verification
- * Verifies entered password against stored $2a$12$ format bcrypt hash
- */
-function mockBcryptCompare(plainPassword, storedHash) {
-    if (!storedHash || !storedHash.startsWith("$2a$12$") || storedHash.length !== 60) {
-        return false;
-    }
-    const salt = storedHash.substring(7, 29);
-    const expectedHash = storedHash.substring(29);
-    let hash = "";
-    for (let i = 0; i < 31; i++) {
-        const code = (plainPassword.charCodeAt(i % plainPassword.length) * 31 + salt.charCodeAt(i % 22) * 17 + i * 13) % BCRYPT_SALT_CHARS.length;
-        hash += BCRYPT_SALT_CHARS.charAt(code);
-    }
-    return hash === expectedHash;
-}
-
-// Base64URL Encoding & Decoding for JWT
-function base64UrlEncode(str) {
-    let b64 = "";
     try {
-        if (typeof btoa !== 'undefined') {
-            b64 = btoa(unescape(encodeURIComponent(str)));
-        } else if (typeof Buffer !== 'undefined') {
-            b64 = Buffer.from(str).toString('base64');
+        const result = await ParkSmartAPI.getCurrentUser();
+        const user = result?.user;
+
+        if (!user || user.role !== 'owner') {
+            ParkSmartAPI.logoutOwner();
+            authenticatedOwner = null;
+            return null;
         }
-    } catch (e) {
-        b64 = btoa(str);
-    }
-    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
 
-function base64UrlDecode(str) {
-    let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
-    while (b64.length % 4) b64 += '=';
-    try {
-        if (typeof atob !== 'undefined') {
-            return decodeURIComponent(escape(atob(b64)));
-        } else if (typeof Buffer !== 'undefined') {
-            return Buffer.from(b64, 'base64').toString('utf8');
-        }
-    } catch (e) {
-        return atob(b64);
-    }
-    return "";
-}
-
-/**
- * JWT Session Token Generation (Header.Payload.Signature)
- */
-function generateJWT(user) {
-    const header = {
-        alg: "HS256",
-        typ: "JWT"
-    };
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-        sub: user.id || "usr_owner_0918",
-        email: user.email,
-        name: user.name,
-        role: "space_owner",
-        iat: now,
-        exp: now + 86400, // 24-hour expiration
-        iss: "https://auth.parksmart.io",
-        aud: "parksmart-active-control-panel"
-    };
-
-    const b64Header = base64UrlEncode(JSON.stringify(header));
-    const b64Payload = base64UrlEncode(JSON.stringify(payload));
-
-    // Simulated HMAC SHA-256 Signature
-    const secret = "parksmart_sec_k99283fbc8201a74d";
-    let hashVal = 0;
-    const combined = `${b64Header}.${b64Payload}.${secret}`;
-    for (let i = 0; i < combined.length; i++) {
-        hashVal = ((hashVal << 5) - hashVal) + combined.charCodeAt(i);
-        hashVal |= 0;
-    }
-    const signatureRaw = "sig_" + Math.abs(hashVal).toString(36) + "_" + Math.abs(user.email.length * 997).toString(36);
-    const b64Signature = base64UrlEncode(signatureRaw);
-
-    return `${b64Header}.${b64Payload}.${b64Signature}`;
-}
-
-/**
- * Verify JWT Session Token
- */
-function verifyJWT(token) {
-    if (!token || typeof token !== 'string') {
-        return { valid: false, error: 'No token provided' };
-    }
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-        return { valid: false, error: 'Malformed JWT structure' };
-    }
-    try {
-        const payloadJson = base64UrlDecode(parts[1]);
-        const payload = JSON.parse(payloadJson);
-        const now = Math.floor(Date.now() / 1000);
-        if (payload.exp && payload.exp < now) {
-            return { valid: false, error: 'JWT token expired' };
-        }
-        if (payload.role !== 'space_owner') {
-            return { valid: false, error: 'Unauthorized role (requires space_owner)' };
-        }
-        return { valid: true, payload };
-    } catch (e) {
-        return { valid: false, error: 'Invalid JWT payload signature' };
-    }
-}
-
-// Mock Registered Owners Database
-const MOCK_REGISTERED_OWNERS = [
-    {
-        id: "usr_owner_0918",
-        name: "Alex Reynolds",
-        email: "owner@parksmart.com",
-        phone: "+1 (555) 234-5678",
-        // Valid bcrypt hash matching "OwnerPass123!"
-        passwordHash: "$2a$12$e8Y7xK9pL2qR1wT4uV3o0e69sC8wR2kQm7eMn4cZ1vD7gB6jL3sP",
-        role: "space_owner"
-    }
-];
-
-// Session Management Helpers
-function saveOwnerSession(token, user) {
-    try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('parksmart_jwt_token', token);
-            localStorage.setItem('parksmart_authenticated_owner', JSON.stringify(user));
-        }
-    } catch (e) {
-        console.error("Failed to store session:", e);
-    }
-}
-
-function clearOwnerSession() {
-    try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.removeItem('parksmart_jwt_token');
-            localStorage.removeItem('parksmart_authenticated_owner');
-        }
-    } catch (e) {
-        console.error("Failed to clear session:", e);
+        authenticatedOwner = user;
+        return user;
+    } catch (error) {
+        ParkSmartAPI.logoutOwner();
+        authenticatedOwner = null;
+        return null;
     }
 }
 
 function getAuthenticatedOwner() {
-    try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            const token = localStorage.getItem('parksmart_jwt_token');
-            if (!token) return null;
-            const verified = verifyJWT(token);
-            if (verified.valid) {
-                return verified.payload;
-            } else {
-                clearOwnerSession();
-                return null;
-            }
-        }
-    } catch (e) {
-        console.error("Error retrieving authenticated owner:", e);
+    return authenticatedOwner;
+}
+
+function clearOwnerSession() {
+    if (window.ParkSmartAPI) {
+        ParkSmartAPI.logoutOwner();
     }
-    return null;
+
+    authenticatedOwner = null;
+}
+
+function getOwnerInitials(name) {
+    return (name || 'SO')
+        .split(' ')
+        .filter(Boolean)
+        .map(part => part[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
 }
 
 // ============================================
-// 2. DEFAULT OWNER DATA MODEL & STORE
+// 2. EMAIL OTP VERIFICATION UI
 // ============================================
 
-const DEFAULT_OWNER_DATA = {
-    space: {
-        id: "PS-SP-0081",
-        name: "Central Plaza Garage Deck #3",
-        address: "123 Main Street, Downtown District",
-        city: "Metropolis",
-        zip: "10001",
-        type: "covered",
-        typeTitle: "Covered Garage",
-        capacity: 25,
-        occupied: 18,
-        hourlyRate: 4.50,
-        dailyMax: 32.00,
-        surgeMultiplier: 1.0,
-        amenities: ["cctv", "247", "ev", "barrier", "lighting"],
-        status: "OPEN", // "OPEN" or "CLOSED"
-        location: {
-            lat: 40.7128,
-            lng: -74.0060,
-            address: "123 Main Street, Downtown District"
-        },
-        gateCode: "8492#",
-        barrierStatus: "LOCKED",
-        apiKey: "pk_live_sec_9942a78f0b12c"
-    },
-    bookings: [
-        {
-            id: "BK-8091",
-            driverName: "Sarah Jenkins",
-            avatar: "SJ",
-            phone: "+1 555-0192",
-            plate: "7XYZ89",
-            spotNum: "Bay #04",
-            vehicle: "Tesla Model Y (EV)",
-            checkIn: "08:30 AM",
-            checkOut: "01:30 PM",
-            status: "parked",
-            amount: 22.50
-        },
-        {
-            id: "BK-8092",
-            driverName: "Marcus Vance",
-            avatar: "MV",
-            phone: "+1 555-0144",
-            plate: "3KLR22",
-            spotNum: "Bay #12",
-            vehicle: "BMW 330i Sedan",
-            checkIn: "10:15 AM",
-            checkOut: "03:15 PM",
-            status: "parked",
-            amount: 22.50
-        },
-        {
-            id: "BK-8093",
-            driverName: "Elena Rostova",
-            avatar: "ER",
-            phone: "+1 555-0129",
-            plate: "9BMW80",
-            spotNum: "Bay #09",
-            vehicle: "Mercedes C-Class",
-            checkIn: "11:00 AM",
-            checkOut: "04:00 PM",
-            status: "reserved",
-            amount: 22.50
-        },
-        {
-            id: "BK-8094",
-            driverName: "David Chen",
-            avatar: "DC",
-            phone: "+1 555-0188",
-            plate: "5TYP99",
-            spotNum: "Bay #17",
-            vehicle: "Honda Civic",
-            checkIn: "07:00 AM",
-            checkOut: "09:30 AM",
-            status: "completed",
-            amount: 11.25
-        },
-        {
-            id: "BK-8095",
-            driverName: "Chloe Dupont",
-            avatar: "CD",
-            phone: "+1 555-0163",
-            plate: "2FRA55",
-            spotNum: "Bay #22",
-            vehicle: "Hyundai Ioniq 5",
-            checkIn: "01:00 PM",
-            checkOut: "05:00 PM",
-            status: "reserved",
-            amount: 18.00
-        },
-        {
-            id: "BK-8088",
-            driverName: "Michael Chang",
-            avatar: "MC",
-            phone: "+1 555-0171",
-            plate: "4CAL11",
-            spotNum: "Bay #02",
-            vehicle: "Toyota RAV4",
-            checkIn: "Yesterday",
-            checkOut: "Yesterday",
-            status: "completed",
-            amount: 27.00
-        },
-        {
-            id: "BK-8085",
-            driverName: "Jordan Bell",
-            avatar: "JB",
-            phone: "+1 555-0133",
-            plate: "8NYK04",
-            spotNum: "Bay #14",
-            vehicle: "Ford Mustang",
-            checkIn: "09:00 AM",
-            checkOut: "12:00 PM",
-            status: "cancelled",
-            amount: 13.50
-        }
-    ],
-    photos: [
-        "hero-parking.jpg"
-    ]
-};
-
-class OwnerStore {
-    constructor() {
-        this.STORAGE_KEY = 'parksmart_owner_data_v2';
-        this.data = this.load();
-    }
-
-    load() {
-        try {
-            if (typeof window !== 'undefined' && window.localStorage) {
-                const saved = localStorage.getItem(this.STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    return { ...DEFAULT_OWNER_DATA, ...parsed };
-                }
-            }
-        } catch (e) {
-            console.error("Failed to read from localStorage", e);
-        }
-        return JSON.parse(JSON.stringify(DEFAULT_OWNER_DATA));
-    }
-
-    save() {
-        try {
-            if (typeof window !== 'undefined' && window.localStorage) {
-                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
-            }
-        } catch (e) {
-            console.error("Failed to save to localStorage", e);
-        }
-    }
-
-    reset() {
-        this.data = JSON.parse(JSON.stringify(DEFAULT_OWNER_DATA));
-        this.save();
-    }
+function removeOtpVerificationDialog() {
+    document.getElementById('owner-otp-overlay')?.remove();
 }
 
-const store = new OwnerStore();
+function showOtpVerificationDialog(email) {
+    removeOtpVerificationDialog();
 
-// ============================================
-// 3. TOAST NOTIFICATIONS
-// ============================================
-function showToast(message, type = 'default') {
-    let container = document.getElementById('owner-toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'owner-toast-container';
-        container.className = 'owner-toast-container';
-        document.body.appendChild(container);
-    }
+    const overlay = document.createElement('div');
 
-    const toast = document.createElement('div');
-    toast.className = `owner-toast ${type}`;
-    
-    let icon = '🔔';
-    if (type === 'success') icon = '✅';
-    if (type === 'danger') icon = '⚠️';
+    overlay.id = 'owner-otp-overlay';
 
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-    container.appendChild(toast);
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: rgba(15, 23, 42, 0.72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    `;
 
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(15px)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3500);
-}
+    overlay.innerHTML = `
+        <div style="
+            width: min(430px, 100%);
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 24px 70px rgba(0,0,0,.28);
+        ">
 
-// ============================================
-// 4. AUTHENTICATION GUARD & DYNAMIC UI CLEANUP
-// ============================================
+            <h2 style="margin:0 0 8px;">
+                Verify your email
+            </h2>
 
-function syncAuthGuardUI() {
-    const authUser = getAuthenticatedOwner();
-    const isDashboardPage = document.querySelector('.owner-dashboard-root');
+            <p style="
+                margin:0 0 20px;
+                color:#64748b;
+                line-height:1.5;
+            ">
+                Enter the 6-digit verification code for
+                <strong>${email || 'your account'}</strong>.
+            </p>
 
-    // 1. DASHBOARD PAGE ROUTE PROTECTION
-    if (isDashboardPage) {
-        if (!authUser) {
-            console.warn("[AUTH GUARD] Access Denied: Unauthenticated visitor attempting to view Dashboard. Redirecting...");
-            localStorage.setItem('parksmart_auth_error', 'Access Denied: Please sign in with an authorized Space Owner account to view the Active Control Panel.');
-            window.location.replace('owner.html#auth-section');
-            return;
-        }
+            <form id="owner-otp-form">
 
-        // Update Dashboard Navbar Profile
-        const avatarEl = document.getElementById('dash-owner-avatar');
-        const nameEl = document.getElementById('dash-owner-name');
-        const logoutBtn = document.getElementById('dash-btn-logout');
+                <input
+                    id="owner-otp-code"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    placeholder="000000"
+                    required
+                    style="
+                        box-sizing:border-box;
+                        width:100%;
+                        padding:14px 16px;
+                        border:1px solid #cbd5e1;
+                        border-radius:10px;
+                        font-size:1.25rem;
+                        letter-spacing:.35rem;
+                        text-align:center;
+                        margin-bottom:14px;
+                    "
+                >
 
-        if (nameEl) nameEl.textContent = authUser.name || "Space Owner";
-        if (avatarEl) {
-            const initials = (authUser.name || "SO").split(" ").map(p => p[0]).join("").substring(0, 2).toUpperCase();
-            avatarEl.textContent = initials;
-        }
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                clearOwnerSession();
-                showToast("Signed out successfully. Session revoked.", "default");
-                setTimeout(() => {
-                    window.location.href = "owner.html#auth-section";
-                }, 500);
-            });
-        }
-        return; // Finished dashboard sync
-    }
+                <button
+                    type="submit"
+                    style="
+                        width:100%;
+                        padding:13px 16px;
+                        border:0;
+                        border-radius:10px;
+                        font-weight:700;
+                        cursor:pointer;
+                    "
+                >
+                    Verify Email
+                </button>
 
-    // 2. OWNER WEBPAGE (owner.html) AUTH GUARD & UI CLEANUP
-    const navDashItem = document.getElementById('nav-item-dashboard');
-    const navDashBtn = document.getElementById('btn-owner-nav-dash');
-    const navLoginBtn = document.getElementById('btn-owner-nav-login');
-    const navProfileContainer = document.getElementById('nav-owner-profile');
+            </form>
 
-    const heroActionBtn = document.getElementById('hero-btn-action');
-    const heroDashBtn = document.getElementById('hero-btn-dash');
+            <button
+                id="owner-resend-otp"
+                type="button"
+                style="
+                    width:100%;
+                    margin-top:10px;
+                    padding:11px 16px;
+                    border:0;
+                    background:transparent;
+                    cursor:pointer;
+                    font-weight:600;
+                "
+            >
+                Resend code
+            </button>
 
-    const trackerStep1 = document.getElementById('tracker-step-1');
-    const stepBadge1 = document.getElementById('step-badge-1');
-    const trackerStep2 = document.getElementById('tracker-step-2');
-    const trackerStep3 = document.getElementById('tracker-step-3');
-    const stepBadge3 = document.getElementById('step-badge-3');
+            <button
+                id="owner-close-otp"
+                type="button"
+                style="
+                    width:100%;
+                    padding:8px 16px;
+                    border:0;
+                    background:transparent;
+                    color:#64748b;
+                    cursor:pointer;
+                "
+            >
+                Close
+            </button>
 
-    const applyLockedBanner = document.getElementById('apply-locked-banner');
-    const applySection = document.getElementById('apply-section');
-    const securitySimContainer = document.getElementById('security-simulation-container');
+        </div>
+    `;
 
-    // Check for Flash Auth Error from redirected attempts
-    const flashError = localStorage.getItem('parksmart_auth_error');
-    if (flashError) {
-        localStorage.removeItem('parksmart_auth_error');
-        setTimeout(() => showToast(flashError, "danger"), 300);
-    }
+    document.body.appendChild(overlay);
 
-    if (authUser) {
-        // --- AUTHENTICATED STATE ---
-        // Navbar: Reveal Dashboard link & shortcuts
-        if (navDashItem) navDashItem.style.display = 'list-item';
-        if (navDashBtn) navDashBtn.style.display = 'inline-flex';
-        if (navLoginBtn) navLoginBtn.style.display = 'none';
+    const form =
+        document.getElementById('owner-otp-form');
 
-        if (navProfileContainer) {
-            const initials = (authUser.name || "SO").split(" ").map(p => p[0]).join("").substring(0, 2).toUpperCase();
-            navProfileContainer.style.display = 'flex';
-            navProfileContainer.innerHTML = `
-                <div class="nav-owner-avatar">${initials}</div>
-                <span class="nav-owner-name">${authUser.name}</span>
-                <button type="button" class="btn-nav-logout" id="btn-owner-logout-inline" title="Sign Out">Log Out</button>
-            `;
-            const logoutInline = document.getElementById('btn-owner-logout-inline');
-            if (logoutInline) {
-                logoutInline.addEventListener('click', () => {
-                    clearOwnerSession();
-                    showToast("Signed out. Session token cleared.", "default");
-                    setTimeout(() => syncAuthGuardUI(), 300);
-                });
-            }
-        }
+    const codeInput =
+        document.getElementById('owner-otp-code');
 
-        // Hero: Point action directly to apply section and show dashboard button
-        if (heroActionBtn) {
-            heroActionBtn.textContent = "Start Listing Application ↓";
-            heroActionBtn.href = "#apply-section";
-        }
-        if (heroDashBtn) heroDashBtn.style.display = 'inline-flex';
+    const resendButton =
+        document.getElementById('owner-resend-otp');
 
-        // Stepper: Unlock Step 2 & 3
-        if (trackerStep1 && stepBadge1) {
-            trackerStep1.className = 'tracker-step completed';
-            stepBadge1.textContent = "✓";
-        }
-        if (trackerStep2) {
-            trackerStep2.className = 'tracker-step active';
-        }
-        if (trackerStep3 && stepBadge3) {
-            trackerStep3.style.opacity = '1';
-            trackerStep3.style.pointerEvents = 'auto';
-            trackerStep3.className = 'tracker-step';
-            trackerStep3.innerHTML = `
-                <a href="owner-dashboard.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
-                    <span class="step-badge">3</span>
-                    <span>Owner Dashboard (Control Panel)</span>
-                </a>
-            `;
-        }
+    const closeButton =
+        document.getElementById('owner-close-otp');
 
-        // UI Cleanup: Hide Locked State, Reveal Step 2 Apply Form
-        if (applyLockedBanner) applyLockedBanner.style.display = 'none';
-        if (applySection) applySection.style.display = 'block';
+    codeInput?.focus();
 
-        // Display Security Simulation Telemetry (Bcrypt & JWT)
-        if (securitySimContainer) {
-            const activeToken = localStorage.getItem('parksmart_jwt_token') || "";
-            const tokenParts = activeToken.split('.');
-            const expDate = new Date((authUser.exp || 0) * 1000).toLocaleTimeString();
+    form?.addEventListener(
+        'submit',
+        async (event) => {
 
-            securitySimContainer.style.display = 'block';
-            securitySimContainer.innerHTML = `
-                <div class="security-simulation-card">
-                    <div class="security-header">
-                        <div class="security-title">
-                            <span>🛡️ Security Verification Active</span>
-                            <span class="security-badge">BCRYPT + JWT VERIFIED</span>
-                        </div>
-                        <span style="font-size: 0.75rem; color: #94a3b8;">Expires: ${expDate}</span>
-                    </div>
-                    
-                    <div class="security-row">
-                        <div class="security-label">Bcrypt Hash Structure ($2a$12$):</div>
-                        <div class="security-code-box" style="color: #34d399;">
-                            ${MOCK_REGISTERED_OWNERS[0].passwordHash}
-                        </div>
-                    </div>
+            event.preventDefault();
 
-                    <div class="security-row">
-                        <div class="security-label">Generated JWT Session Token (Header.Payload.Signature):</div>
-                        <div class="security-code-box">
-                            <span class="jwt-token-header">${tokenParts[0] || 'eyJhbGci...'}</span><span class="jwt-dot">.</span><span class="jwt-token-payload">${tokenParts[1] || 'eyJzdWIi...'}</span><span class="jwt-dot">.</span><span class="jwt-token-signature">${tokenParts[2] || 'sig_...'}</span>
-                        </div>
-                    </div>
+            const otp =
+                codeInput.value.trim();
 
-                    <div style="font-size: 0.75rem; color: #94a3b8; display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-                        <span>Session Owner: <strong>${authUser.email}</strong> (Role: ${authUser.role})</span>
-                        <span style="color: #38bdf8;">✓ Authorized for Control Panel</span>
-                    </div>
-                </div>
-            `;
-        }
+            if (!/^\d{6}$/.test(otp)) {
+                showToast(
+                    'Enter a valid 6-digit verification code.',
+                    'danger'
+                );
 
-    } else {
-        // --- UNAUTHENTICATED STATE (Strict Guard) ---
-        // Navbar: HIDE Dashboard links
-        if (navDashItem) navDashItem.style.display = 'none';
-        if (navDashBtn) navDashBtn.style.display = 'none';
-        if (navLoginBtn) navLoginBtn.style.display = 'inline-flex';
-        if (navProfileContainer) navProfileContainer.style.display = 'none';
-
-        // Hero: Hide dashboard button, point action to Login/Register
-        if (heroActionBtn) {
-            heroActionBtn.textContent = "Sign In to Start Listing ↓";
-            heroActionBtn.href = "#auth-section";
-        }
-        if (heroDashBtn) heroDashBtn.style.display = 'none';
-
-        // Stepper: Only Step 1 active, Step 2 & 3 locked
-        if (trackerStep1 && stepBadge1) {
-            trackerStep1.className = 'tracker-step active';
-            stepBadge1.textContent = "1";
-        }
-        if (trackerStep2) {
-            trackerStep2.className = 'tracker-step';
-        }
-        if (trackerStep3 && stepBadge3) {
-            trackerStep3.style.opacity = '0.5';
-            trackerStep3.style.pointerEvents = 'none';
-            trackerStep3.className = 'tracker-step';
-            trackerStep3.innerHTML = `
-                <span class="step-badge" id="step-badge-3">🔒</span>
-                <span id="tracker-step-3-text">Owner Dashboard (Locked)</span>
-            `;
-        }
-
-        // UI Cleanup: HIDE Step 2 Space Details Form, SHOW Locked Banner
-        if (applyLockedBanner) applyLockedBanner.style.display = 'block';
-        if (applySection) applySection.style.display = 'none';
-        if (securitySimContainer) securitySimContainer.style.display = 'none';
-    }
-}
-
-// ============================================
-// 5. OWNER AUTHENTICATION CONTROLLER (Bcrypt + JWT Flow)
-// ============================================
-
-function initOwnerAuth() {
-    const tabLogin = document.getElementById('auth-tab-login');
-    const tabRegister = document.getElementById('auth-tab-register');
-    const formLogin = document.getElementById('owner-login-form');
-    const formRegister = document.getElementById('owner-register-form');
-    const btnDemo = document.getElementById('btn-demo-credentials');
-
-    if (!tabLogin || !tabRegister) return;
-
-    tabLogin.addEventListener('click', () => {
-        tabLogin.classList.add('active');
-        tabRegister.classList.remove('active');
-        formLogin.style.display = 'block';
-        formRegister.style.display = 'none';
-    });
-
-    tabRegister.addEventListener('click', () => {
-        tabRegister.classList.add('active');
-        tabLogin.classList.remove('active');
-        formRegister.style.display = 'block';
-        formLogin.style.display = 'none';
-    });
-
-    // Password Toggles
-    document.querySelectorAll('.password-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const input = btn.previousElementSibling;
-            if (input.type === 'password') {
-                input.type = 'text';
-                btn.textContent = '🙈';
-            } else {
-                input.type = 'password';
-                btn.textContent = '👁️';
-            }
-        });
-    });
-
-    // Quick Demo Credentials Fill
-    if (btnDemo) {
-        btnDemo.addEventListener('click', () => {
-            document.getElementById('owner-login-email').value = "owner@parksmart.com";
-            document.getElementById('owner-login-password').value = "OwnerPass123!";
-            showToast("Demo credentials filled! Verified with bcrypt hash $2a$12$...", "success");
-        });
-    }
-
-    // Handle Login Submit with Bcrypt Verification & JWT Issuance
-    if (formLogin) {
-        formLogin.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('owner-login-email').value.trim();
-            const pwd = document.getElementById('owner-login-password').value;
-
-            if (!email || !pwd) {
-                showToast("Please enter both email and password.", "danger");
                 return;
             }
 
-            // Retrieve or match against registered owners
-            let matchedUser = MOCK_REGISTERED_OWNERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+            try {
+                const result =
+                    await ParkSmartAPI.verifyAccountOtp(
+                        otp
+                    );
 
-            // Check custom registered users in store if any
-            if (!matchedUser) {
-                const customUsers = JSON.parse(localStorage.getItem('parksmart_registered_users') || '[]');
-                matchedUser = customUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-            }
+                showToast(
+                    result.message ||
+                    'Email verified successfully.',
+                    'success'
+                );
 
-            if (!matchedUser) {
-                // If demo email or unknown, verify or create on the fly with bcrypt hash
-                if (email === "owner@parksmart.com" && pwd === "OwnerPass123!") {
-                    matchedUser = MOCK_REGISTERED_OWNERS[0];
-                } else {
-                    showToast("No space owner account found with this email. Please register.", "danger");
-                    return;
-                }
-            }
+                removeOtpVerificationDialog();
 
-            // Perform Bcrypt Password Verification
-            const isPasswordValid = mockBcryptCompare(pwd, matchedUser.passwordHash);
+                await syncAuthGuardUI();
 
-            if (!isPasswordValid) {
-                showToast("Invalid password. Bcrypt signature comparison failed.", "danger");
-                return;
-            }
+                const applySection =
+                    document.getElementById(
+                        'apply-section'
+                    );
 
-            // Generate Secure JWT Session Token
-            const token = generateJWT(matchedUser);
-            saveOwnerSession(token, matchedUser);
-
-            console.log(`[ParkSmart Security] Authentication Success: Verified password against bcrypt hash ${matchedUser.passwordHash}. Generated JWT token: ${token}`);
-            showToast(`Welcome back, ${matchedUser.name}! Session authenticated via JWT.`, "success");
-
-            // Update UI Guard State
-            syncAuthGuardUI();
-
-            // Smooth scroll down to unlocked Step 2 (Space Details Form)
-            const applySection = document.getElementById('apply-section');
-            if (applySection) {
-                applySection.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
-    }
-
-    // Handle Register Submit with Bcrypt Hashing & JWT Issuance
-    if (formRegister) {
-        formRegister.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('reg-name').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
-            const phone = document.getElementById('reg-phone').value.trim();
-            const pwd = document.getElementById('reg-password').value;
-
-            if (!name || !email || !pwd) {
-                showToast("Please complete all required fields.", "danger");
-                return;
-            }
-
-            // Hash password matching bcrypt structure ($2a$12$...)
-            const bcryptHash = mockBcryptHash(pwd);
-
-            const newUser = {
-                id: "usr_" + Math.random().toString(36).substr(2, 9),
-                name: name,
-                email: email,
-                phone: phone || "+1 (555) 000-0000",
-                passwordHash: bcryptHash,
-                role: "space_owner"
-            };
-
-            // Save user in registry
-            const customUsers = JSON.parse(localStorage.getItem('parksmart_registered_users') || '[]');
-            customUsers.push(newUser);
-            localStorage.setItem('parksmart_registered_users', JSON.stringify(customUsers));
-
-            // Generate and issue JWT session token
-            const token = generateJWT(newUser);
-            saveOwnerSession(token, newUser);
-
-            console.log(`[ParkSmart Security] User Registered: Password securely stored as bcrypt hash ${bcryptHash}. Issued JWT: ${token}`);
-            showToast("Owner account registered! Space Details Form unlocked.", "success");
-
-            // Update UI Guard State
-            syncAuthGuardUI();
-
-            // Smooth scroll down to unlocked Step 2 (Space Details Form)
-            const applySection = document.getElementById('apply-section');
-            if (applySection) {
-                applySection.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
-    }
-}
-
-// ============================================
-// 6. GOOGLE MAPS PLACES AUTOCOMPLETE INTEGRATION
-// ============================================
-
-const PRESET_PLACES_SUGGESTIONS = [
-    {
-        name: "Central Plaza Garage Deck #3",
-        address: "123 Main Street, Downtown District, Metropolis 10001",
-        city: "Metropolis",
-        zip: "10001",
-        lat: 40.7128,
-        lng: -74.0060
-    },
-    {
-        name: "Grand Financial Center Underground Parking",
-        address: "450 Lexington Ave, Grand Central Hub, New York 10017",
-        city: "New York",
-        zip: "10017",
-        lat: 40.7527,
-        lng: -73.9772
-    },
-    {
-        name: "Market Square Multi-Story Facility",
-        address: "789 Market Street, Financial District, San Francisco 94103",
-        city: "San Francisco",
-        zip: "94103",
-        lat: 37.7869,
-        lng: -122.4048
-    },
-    {
-        name: "Metro Loop Transit Parking Deck",
-        address: "100 South State Street, Loop Center, Chicago 60603",
-        city: "Chicago",
-        zip: "60603",
-        lat: 41.8819,
-        lng: -87.6278
-    },
-    {
-        name: "Oceanfront Supercharger Lot",
-        address: "350 Ocean Drive, South Beach, Miami 33139",
-        city: "Miami",
-        zip: "33139",
-        lat: 25.7738,
-        lng: -80.1311
-    },
-    {
-        name: "Tech Park Covered EV Hub",
-        address: "78 Tesla Blvd, Innovation District, Austin 78701",
-        city: "Austin",
-        zip: "78701",
-        lat: 30.2672,
-        lng: -97.7431
-    }
-];
-
-function initPlacesAddressAutocomplete() {
-    const addressInput = document.getElementById('space-address');
-    const dropdown = document.getElementById('address-suggestions-dropdown');
-    const cityInput = document.getElementById('space-city');
-    const zipInput = document.getElementById('space-zip');
-
-    if (!addressInput) return;
-
-    // 1. Check if Google Maps Places Autocomplete is active
-    let googleAutocompleteInstance = null;
-    if (window.google && window.google.maps && window.google.maps.places) {
-        try {
-            googleAutocompleteInstance = new google.maps.places.Autocomplete(addressInput, {
-                types: ['address', 'establishment'],
-                fields: ['formatted_address', 'address_components', 'geometry', 'name']
-            });
-
-            googleAutocompleteInstance.addListener('place_changed', () => {
-                const place = googleAutocompleteInstance.getPlace();
-                if (!place) return;
-
-                if (place.formatted_address) {
-                    addressInput.value = place.formatted_address;
-                }
-
-                if (place.address_components) {
-                    let city = "";
-                    let zip = "";
-                    place.address_components.forEach(c => {
-                        if (c.types.includes('locality')) city = c.long_name;
-                        if (c.types.includes('postal_code')) zip = c.long_name;
+                if (applySection) {
+                    applySection.scrollIntoView({
+                        behavior: 'smooth'
                     });
-                    if (city && cityInput) cityInput.value = city;
-                    if (zip && zipInput) zipInput.value = zip;
                 }
 
-                if (place.geometry && place.geometry.location) {
-                    const lat = place.geometry.location.lat();
-                    const lng = place.geometry.location.lng();
-                    store.data.space.location.lat = lat;
-                    store.data.space.location.lng = lng;
-                    store.data.space.address = addressInput.value;
-                    store.save();
-                }
+            } catch (error) {
 
-                showToast(`📍 Address populated from Google Places: ${place.name || place.formatted_address}`, "success");
-            });
-            console.log("[ParkSmart Maps] Google Maps Places Autocomplete bound to #space-address");
-        } catch (e) {
-            console.warn("[ParkSmart Maps] Google Places Autocomplete init notice:", e);
+                showToast(
+                    error.message ||
+                    'Email verification failed.',
+                    'danger'
+                );
+            }
         }
-    }
+    );
 
-    // 2. Interactive Fallback Address Suggestions Dropdown
-    if (!dropdown) return;
+    resendButton?.addEventListener(
+        'click',
+        async () => {
 
-    function renderSuggestions(query) {
-        const q = (query || "").toLowerCase().trim();
-        if (q.length < 2) {
-            dropdown.innerHTML = '';
-            dropdown.classList.remove('visible');
-            return;
+            try {
+                const result =
+                    await ParkSmartAPI.sendVerificationOtp(
+                        "email"
+                    );
+
+                showToast(
+                    result.message ||
+                    'Verification code generated.',
+                    'success'
+                );
+
+            } catch (error) {
+
+                showToast(
+                    error.message ||
+                    'Unable to resend verification code.',
+                    'danger'
+                );
+            }
         }
+    );
 
-        const matches = PRESET_PLACES_SUGGESTIONS.filter(item => 
-            item.address.toLowerCase().includes(q) ||
-            item.name.toLowerCase().includes(q) ||
-            item.city.toLowerCase().includes(q)
+    closeButton?.addEventListener(
+        'click',
+        () => {
+
+            removeOtpVerificationDialog();
+        }
+    );
+}
+
+
+
+// ============================================
+// 4. TOAST NOTIFICATIONS
+// ============================================
+
+function showToast(
+    message,
+    type = 'default'
+) {
+
+    let container =
+        document.getElementById(
+            'owner-toast-container'
         );
 
-        if (matches.length === 0) {
-            dropdown.innerHTML = '';
-            dropdown.classList.remove('visible');
-            return;
-        }
+    if (!container) {
 
-        dropdown.innerHTML = '';
-        matches.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'suggestion-item';
-            div.innerHTML = `
-                <span class="suggestion-icon">📍</span>
-                <div>
-                    <div class="suggestion-text-main">${item.name}</div>
-                    <div class="suggestion-text-sub">${item.address}</div>
-                </div>
-            `;
-            div.addEventListener('click', () => {
-                addressInput.value = item.address;
-                if (cityInput) cityInput.value = item.city;
-                if (zipInput) zipInput.value = item.zip;
+        container =
+            document.createElement(
+                'div'
+            );
 
-                store.data.space.address = item.address;
-                store.data.space.city = item.city;
-                store.data.space.zip = item.zip;
-                store.data.space.location.lat = item.lat;
-                store.data.space.location.lng = item.lng;
-                store.save();
+        container.id =
+            'owner-toast-container';
 
-                dropdown.innerHTML = '';
-                dropdown.classList.remove('visible');
-                showToast(`Address selected: ${item.name}`, "success");
-            });
-            dropdown.appendChild(div);
-        });
+        container.className =
+            'owner-toast-container';
 
-        dropdown.classList.add('visible');
+        document.body.appendChild(
+            container
+        );
     }
 
-    addressInput.addEventListener('input', (e) => {
-        renderSuggestions(e.target.value);
-    });
+    const toast =
+        document.createElement(
+            'div'
+        );
 
-    addressInput.addEventListener('focus', (e) => {
-        if (e.target.value.length >= 2) {
-            renderSuggestions(e.target.value);
-        }
-    });
+    toast.className =
+        `owner-toast ${type}`;
 
-    document.addEventListener('click', (e) => {
-        if (!addressInput.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.remove('visible');
-        }
-    });
+    let icon =
+        '🔔';
+
+    if (type === 'success') {
+        icon = '✅';
+    }
+
+    if (type === 'danger') {
+        icon = '⚠️';
+    }
+
+    toast.innerHTML =
+        `<span>${icon}</span> <span>${message}</span>`;
+
+    container.appendChild(
+        toast
+    );
+
+    setTimeout(
+        () => {
+
+            toast.style.opacity =
+                '0';
+
+            toast.style.transform =
+                'translateY(15px)';
+
+            toast.style.transition =
+                'all 0.3s ease';
+
+            setTimeout(
+                () => toast.remove(),
+                300
+            );
+
+        },
+        3500
+    );
 }
 
 // ============================================
-// 7. APPLY FOR RENTING / SPACE DETAILS FORM
+// 5. AUTHENTICATION GUARD & DYNAMIC UI
+// ============================================
+
+async function syncAuthGuardUI() {
+
+    const authUser =
+        await refreshAuthenticatedOwner();
+
+
+    const isDashboardPage =
+        document.querySelector(
+            ".owner-dashboard-root"
+        );
+
+
+    const authSection =
+        document.getElementById(
+            "auth-section"
+        );
+
+
+    const applySection =
+        document.getElementById(
+            "apply-section"
+        );
+
+
+    const navDashItem =
+        document.getElementById(
+            "nav-item-dashboard"
+        );
+
+
+    const navDashBtn =
+        document.getElementById(
+            "btn-owner-nav-dash"
+        );
+
+
+    const navLoginBtn =
+        document.getElementById(
+            "btn-owner-nav-login"
+        );
+
+
+    const navProfileContainer =
+        document.getElementById(
+            "nav-owner-profile"
+        );
+
+
+    const heroActionBtn =
+        document.getElementById(
+            "hero-btn-action"
+        );
+
+
+    const heroDashBtn =
+        document.getElementById(
+            "hero-btn-dash"
+        );
+
+
+    // ========================================
+    // DASHBOARD AUTH GUARD
+    // ========================================
+
+    if (isDashboardPage) {
+
+        if (
+            !authUser ||
+            authUser.role !== "owner" ||
+            !authUser.email_verified
+        ) {
+
+            sessionStorage.setItem(
+                "parksmart_auth_error",
+
+                !authUser
+                    ? "Please sign in with your owner account."
+                    : "Please verify your email before accessing the Owner Dashboard."
+            );
+
+
+            window.location.replace(
+                "/pages/owner.html#auth-section"
+            );
+
+
+            return false;
+        }
+
+
+        // No top-navbar owner name/avatar/logout here.
+        // The owner identity now belongs only to
+        // the bottom-left account dock.
+
+        return true;
+    }
+
+
+    // ========================================
+    // OWNER PAGE FLASH MESSAGE
+    // ========================================
+
+    const flashError =
+        sessionStorage.getItem(
+            "parksmart_auth_error"
+        );
+
+
+    if (flashError) {
+
+        sessionStorage.removeItem(
+            "parksmart_auth_error"
+        );
+
+
+        setTimeout(
+            () => {
+
+                showToast(
+                    flashError,
+                    "danger"
+                );
+
+            },
+            250
+        );
+    }
+
+
+    const isVerifiedOwner =
+        Boolean(
+            authUser &&
+            authUser.role === "owner" &&
+            authUser.email_verified
+        );
+
+
+    // ========================================
+    // VERIFIED OWNER
+    // ========================================
+
+    if (isVerifiedOwner) {
+
+        // Hide login/register
+        if (authSection) {
+            authSection.style.display =
+                "none";
+        }
+
+
+        // Show parking application
+        if (applySection) {
+            applySection.style.display =
+                "";
+        }
+
+
+        // Hide normal login nav button
+        if (navLoginBtn) {
+            navLoginBtn.style.display =
+                "none";
+        }
+
+
+        // We no longer want an owner profile
+        // injected into the top navbar.
+        if (navProfileContainer) {
+
+            navProfileContainer.style.display =
+                "none";
+
+            navProfileContainer.innerHTML =
+                "";
+        }
+
+
+        // Show dashboard links
+        if (navDashItem) {
+            navDashItem.style.display =
+                "list-item";
+        }
+
+
+        if (navDashBtn) {
+            navDashBtn.style.display =
+                "inline-flex";
+        }
+
+
+        if (heroDashBtn) {
+            heroDashBtn.style.display =
+                "inline-flex";
+        }
+
+
+        if (heroActionBtn) {
+
+            heroActionBtn.textContent =
+                "List a Parking Space ↓";
+
+            heroActionBtn.href =
+                "#apply-section";
+        }
+
+
+        return true;
+    }
+
+
+    // ========================================
+    // NOT LOGGED IN / NOT VERIFIED
+    // ========================================
+
+    // Show login/register
+    if (authSection) {
+        authSection.style.display =
+            "";
+    }
+
+
+    // Hide parking application completely
+    if (applySection) {
+        applySection.style.display =
+            "none";
+    }
+
+
+    // Hide dashboard links
+    if (navDashItem) {
+        navDashItem.style.display =
+            "none";
+    }
+
+
+    if (navDashBtn) {
+        navDashBtn.style.display =
+            "none";
+    }
+
+
+    if (heroDashBtn) {
+        heroDashBtn.style.display =
+            "none";
+    }
+
+
+    // Show normal owner login nav link
+    if (navLoginBtn) {
+        navLoginBtn.style.display =
+            "inline-flex";
+    }
+
+
+    // Do not inject user identity in navbar
+    if (navProfileContainer) {
+
+        navProfileContainer.style.display =
+            "none";
+
+        navProfileContainer.innerHTML =
+            "";
+    }
+
+
+    if (heroActionBtn) {
+
+        heroActionBtn.textContent =
+            authUser
+                ? "Verify Email to Continue ↓"
+                : "Sign In to Start Listing ↓";
+
+        heroActionBtn.href =
+            "#auth-section";
+    }
+
+
+    return false;
+}
+
+// ============================================
+// 6. OWNER AUTHENTICATION CONTROLLER
+// REAL EXPRESS API
+// ============================================
+
+function initForgotPassword() {
+
+    const openButton =
+        document.getElementById(
+            "owner-forgot-password"
+        );
+
+
+    const overlay =
+        document.getElementById(
+            "forgot-password-overlay"
+        );
+
+
+    if (
+        !openButton ||
+        !overlay
+    ) {
+        return;
+    }
+
+
+    const closeButton =
+        document.getElementById(
+            "forgot-password-close"
+        );
+
+
+    const description =
+        document.getElementById(
+            "forgot-password-description"
+        );
+
+
+    const emailForm =
+        document.getElementById(
+            "forgot-password-email-form"
+        );
+
+
+    const otpForm =
+        document.getElementById(
+            "forgot-password-otp-form"
+        );
+
+
+    const newPasswordForm =
+        document.getElementById(
+            "forgot-password-new-form"
+        );
+
+
+    let resetEmail =
+        "";
+
+
+    let resetToken =
+        "";
+
+
+    function closeResetDialog() {
+
+        overlay.style.display =
+            "none";
+
+
+        document.body.style.overflow =
+            "";
+
+
+        emailForm.style.display =
+            "";
+
+
+        otpForm.style.display =
+            "none";
+
+
+        newPasswordForm.style.display =
+            "none";
+
+
+        resetEmail =
+            "";
+
+
+        resetToken =
+            "";
+    }
+
+
+    openButton.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+
+            const loginEmail =
+                document
+                    .getElementById(
+                        "owner-login-email"
+                    )
+                    ?.value
+                    .trim();
+
+
+            const resetEmailInput =
+                document.getElementById(
+                    "forgot-password-email"
+                );
+
+
+            if (
+                resetEmailInput &&
+                loginEmail
+            ) {
+                resetEmailInput.value =
+                    loginEmail;
+            }
+
+
+            overlay.style.display =
+                "block";
+
+
+            document.body.style.overflow =
+                "hidden";
+        }
+    );
+
+
+    closeButton?.addEventListener(
+        "click",
+        closeResetDialog
+    );
+
+
+    overlay.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === overlay
+            ) {
+                closeResetDialog();
+            }
+        }
+    );
+
+
+    emailForm?.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            resetEmail =
+                document
+                    .getElementById(
+                        "forgot-password-email"
+                    )
+                    .value
+                    .trim()
+                    .toLowerCase();
+
+
+            try {
+
+                const result =
+                    await ParkSmartAPI
+                        .forgotPassword(
+                            resetEmail
+                        );
+
+
+                showToast(
+                    result.message ||
+                    "Reset code sent.",
+                    "success"
+                );
+
+
+                emailForm.style.display =
+                    "none";
+
+
+                otpForm.style.display =
+                    "";
+
+
+                if (description) {
+
+                    description.textContent =
+                        "Enter the 6-digit password reset code sent to your email.";
+                }
+
+
+                document
+                    .getElementById(
+                        "forgot-password-otp"
+                    )
+                    ?.focus();
+
+
+            } catch (error) {
+
+                showToast(
+                    error.message ||
+                    "Unable to send reset code.",
+                    "danger"
+                );
+            }
+        }
+    );
+
+
+    otpForm?.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const otp =
+                document
+                    .getElementById(
+                        "forgot-password-otp"
+                    )
+                    .value
+                    .trim();
+
+
+            if (
+                !/^\d{6}$/.test(
+                    otp
+                )
+            ) {
+
+                showToast(
+                    "Enter a valid 6-digit reset code.",
+                    "danger"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const result =
+                    await ParkSmartAPI
+                        .verifyResetOtp(
+                            resetEmail,
+                            otp
+                        );
+
+
+                resetToken =
+                    result.reset_token;
+
+
+                otpForm.style.display =
+                    "none";
+
+
+                newPasswordForm.style.display =
+                    "";
+
+
+                if (description) {
+
+                    description.textContent =
+                        "Create a new password for your ParkSmart account.";
+                }
+
+
+                document
+                    .getElementById(
+                        "forgot-password-new"
+                    )
+                    ?.focus();
+
+
+            } catch (error) {
+
+                showToast(
+                    error.message ||
+                    "Unable to verify reset code.",
+                    "danger"
+                );
+            }
+        }
+    );
+
+
+    newPasswordForm
+        ?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+
+                const password =
+                    document
+                        .getElementById(
+                            "forgot-password-new"
+                        )
+                        .value;
+
+
+                const confirmPassword =
+                    document
+                        .getElementById(
+                            "forgot-password-confirm"
+                        )
+                        .value;
+
+
+                if (
+                    password.length < 8
+                ) {
+
+                    showToast(
+                        "Password must contain at least 8 characters.",
+                        "danger"
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    password !==
+                    confirmPassword
+                ) {
+
+                    showToast(
+                        "Passwords do not match.",
+                        "danger"
+                    );
+
+                    return;
+                }
+
+
+                try {
+
+                    const result =
+                        await ParkSmartAPI
+                            .resetPassword(
+                                resetToken,
+                                password
+                            );
+
+
+                    closeResetDialog();
+
+
+                    showToast(
+                        result.message ||
+                        "Password reset successfully.",
+                        "success"
+                    );
+
+
+                    const loginEmail =
+                        document
+                            .getElementById(
+                                "owner-login-email"
+                            );
+
+
+                    if (loginEmail) {
+                        loginEmail.value =
+                            resetEmail;
+                    }
+
+
+                    document
+                        .getElementById(
+                            "owner-login-password"
+                        )
+                        ?.focus();
+
+
+                } catch (error) {
+
+                    showToast(
+                        error.message ||
+                        "Unable to reset password.",
+                        "danger"
+                    );
+                }
+            }
+        );
+}
+
+function initOwnerAuth() {
+
+    const tabLogin =
+        document.getElementById(
+            'auth-tab-login'
+        );
+
+    const tabRegister =
+        document.getElementById(
+            'auth-tab-register'
+        );
+
+    const formLogin =
+        document.getElementById(
+            'owner-login-form'
+        );
+
+    const formRegister =
+        document.getElementById(
+            'owner-register-form'
+        );
+
+    // ========================================
+    // LOGIN / REGISTER TAB SWITCHING
+    // ========================================
+
+    if (
+        tabLogin &&
+        tabRegister &&
+        formLogin &&
+        formRegister
+    ) {
+
+        tabLogin.addEventListener(
+            'click',
+            () => {
+
+                tabLogin.classList.add(
+                    'active'
+                );
+
+                tabRegister.classList.remove(
+                    'active'
+                );
+
+                formLogin.style.display =
+                    'block';
+
+                formRegister.style.display =
+                    'none';
+            }
+        );
+
+        tabRegister.addEventListener(
+            'click',
+            () => {
+
+                tabRegister.classList.add(
+                    'active'
+                );
+
+                tabLogin.classList.remove(
+                    'active'
+                );
+
+                formRegister.style.display =
+                    'block';
+
+                formLogin.style.display =
+                    'none';
+            }
+        );
+    }
+
+    // ========================================
+    // PASSWORD VISIBILITY BUTTONS
+    // ========================================
+
+    document
+        .querySelectorAll(
+            '.password-toggle-btn'
+        )
+        .forEach(
+            btn => {
+
+                btn.addEventListener(
+                    'click',
+                    () => {
+
+                        const input =
+                            btn.previousElementSibling;
+
+                        if (!input) {
+                            return;
+                        }
+
+                        if (
+                            input.type ===
+                            'password'
+                        ) {
+
+                            input.type =
+                                'text';
+
+                            btn.textContent =
+                                '🙈';
+
+                        } else {
+
+                            input.type =
+                                'password';
+
+                            btn.textContent =
+                                '👁️';
+                        }
+                    }
+                );
+            }
+        );
+
+    // ========================================
+    // REAL OWNER LOGIN
+    // ========================================
+
+    if (formLogin) {
+
+        formLogin.addEventListener(
+            'submit',
+            async (event) => {
+
+                event.preventDefault();
+
+                const email =
+                    document
+                        .getElementById(
+                            'owner-login-email'
+                        )
+                        ?.value
+                        .trim();
+
+                const password =
+                    document
+                        .getElementById(
+                            'owner-login-password'
+                        )
+                        ?.value;
+
+                if (
+                    !email ||
+                    !password
+                ) {
+
+                    showToast(
+                        'Please enter both email and password.',
+                        'danger'
+                    );
+
+                    return;
+                }
+
+                try {
+
+                    const result =
+                        await ParkSmartAPI.loginOwner(
+                            email,
+                            password
+                        );
+
+                    // ====================================
+                    // UNVERIFIED ACCOUNT
+                    // ====================================
+
+                    if (
+                        !result.user
+                            ?.email_verified
+                    ) {
+
+                        try {
+
+                            await ParkSmartAPI.sendVerificationOtp(
+                                "email"
+                            );
+
+                        } catch (error) {
+
+                            // 429 means an OTP
+                            // already exists recently.
+
+                            if (
+                                error.status !==
+                                429
+                            ) {
+
+                                throw error;
+                            }
+                        }
+
+                        await syncAuthGuardUI();
+
+                        showToast(
+                            'Login successful. Verify your email to continue.',
+                            'success'
+                        );
+
+                        showOtpVerificationDialog(
+                            result.user.email
+                        );
+
+                        return;
+                    }
+
+                    // ====================================
+                    // VERIFIED OWNER
+                    // ====================================
+
+                    showToast(
+                        `Welcome back, ${
+                            result.user.name ||
+                            'Space Owner'
+                        }!`,
+                        'success'
+                    );
+
+                    await syncAuthGuardUI();
+
+                    const applySection =
+                        document.getElementById(
+                            'apply-section'
+                        );
+
+                    if (applySection) {
+
+                        applySection.scrollIntoView({
+                            behavior:
+                                'smooth'
+                        });
+                    }
+
+                } catch (error) {
+
+                    showToast(
+                        error.message ||
+                        'Unable to sign in.',
+                        'danger'
+                    );
+                }
+            }
+        );
+    }
+
+    // ========================================
+    // REAL OWNER REGISTRATION
+    // ========================================
+
+    if (formRegister) {
+
+        formRegister.addEventListener(
+            'submit',
+            async (event) => {
+
+                event.preventDefault();
+
+                const name =
+                    document
+                        .getElementById(
+                            'reg-name'
+                        )
+                        ?.value
+                        .trim();
+
+                const email =
+                    document
+                        .getElementById(
+                            'reg-email'
+                        )
+                        ?.value
+                        .trim();
+
+                const phone =
+                    document
+                        .getElementById(
+                            'reg-phone'
+                        )
+                        ?.value
+                        .trim();
+
+                const password =
+                    document
+                        .getElementById(
+                            'reg-password'
+                        )
+                        ?.value;
+
+                if (
+                    !name ||
+                    !email ||
+                    !password
+                ) {
+
+                    showToast(
+                        'Please complete all required fields.',
+                        'danger'
+                    );
+
+                    return;
+                }
+
+                try {
+
+                    const registration =
+                        await ParkSmartAPI
+                            .registerOwner({
+                                name,
+                                email,
+                                phone,
+                                password
+                            });
+
+                    showToast(
+                        registration.message ||
+                        'Owner account created.',
+                        'success'
+                    );
+
+                    // Login immediately after
+                    // successful registration so
+                    // the OTP endpoint has a JWT.
+
+                    const login =
+                        await ParkSmartAPI
+                            .loginOwner(
+                                email,
+                                password
+                            );
+
+                    await syncAuthGuardUI();
+
+                    if (
+                        !login.user
+                            ?.email_verified
+                    ) {
+
+                        try {
+
+                            await ParkSmartAPI.sendVerificationOtp(
+                                "email"
+                            );
+
+                        } catch (error) {
+
+                            if (
+                                error.status !==
+                                429
+                            ) {
+
+                                throw error;
+                            }
+                        }
+
+                        showOtpVerificationDialog(
+                            login.user.email
+                        );
+
+                        return;
+                    }
+
+                    const applySection =
+                        document.getElementById(
+                            'apply-section'
+                        );
+
+                    if (applySection) {
+
+                        applySection.scrollIntoView({
+                            behavior:
+                                'smooth'
+                        });
+                    }
+
+                } catch (error) {
+
+                    showToast(
+                        error.message ||
+                        'Unable to create owner account.',
+                        'danger'
+                    );
+                }
+            }
+        );
+    }
+}
+
+// ============================================
+// 7. DEVELOPMENT PARKING LOCATION PRESETS
+// ============================================
+
+const DEVELOPMENT_PARKING_LOCATIONS = {
+
+    "bhayandar-station": {
+        name:
+            "Bhayandar West Railway Station Skywalk Pay & Park",
+
+        address:
+            "Below Skywalk, Bhayandar West Railway Station, Bhayandar West",
+
+        city:
+            "Mira Bhayandar",
+
+        postalCode:
+            "401101",
+
+        latitude:
+            19.310700,
+
+        longitude:
+            72.851000,
+    },
+
+
+    "star-bazaar": {
+        name:
+            "Star Bazaar Pay & Park - Reservation 264A",
+
+        address:
+            "Reservation No. 264A, Near Star Bazaar, Mira Bhayandar",
+
+        city:
+            "Mira Bhayandar",
+
+        postalCode:
+            "401107",
+
+        latitude:
+            19.287900,
+
+        longitude:
+            72.868600,
+    },
+
+
+    "mira-road-station": {
+        name:
+            "Mira Road East Railway Station Pay & Park - Reservation 184",
+
+        address:
+            "Reservation No. 184, Mira Road Railway Station, Mira Road East",
+
+        city:
+            "Mira Bhayandar",
+
+        postalCode:
+            "401107",
+
+        latitude:
+            19.281300,
+
+        longitude:
+            72.856600,
+    },
+
+
+    "mira-road-skywalk": {
+        name:
+            "Mira Road East Skywalk Parallel Road Pay & Park",
+
+        address:
+            "Parallel Road near Mira Road Railway Station Skywalk, Mira Road East",
+
+        city:
+            "Mira Bhayandar",
+
+        postalCode:
+            "401107",
+
+        latitude:
+            19.280900,
+
+        longitude:
+            72.857400,
+    },
+
+
+    "ramdev-park": {
+        name:
+            "Ramdev Park Road Pay & Park - Reservation 245",
+
+        address:
+            "Reservation No. 245, Ramdev Park Road, Mira Road East",
+
+        city:
+            "Mira Bhayandar",
+
+        postalCode:
+            "401107",
+
+        latitude:
+            19.287000,
+
+        longitude:
+            72.875300,
+    },
+
+
+    "navghar": {
+        name:
+            "Navghar Pay & Park - Reservation 301",
+
+        address:
+            "Navghar, Bhayandar East, Mira Bhayandar",
+
+        city:
+            "Mira Bhayandar",
+
+        postalCode:
+            "401105",
+
+        latitude:
+            19.307400,
+
+        longitude:
+            72.865200,
+    },
+
+
+    "bkc-rg2": {
+        name:
+            "MMRDA BKC RG-2 Public Car Parking",
+
+        address:
+            "Plot RG-2, G Block, Bandra Kurla Complex, Bandra East",
+
+        city:
+            "Mumbai",
+
+        postalCode:
+            "400051",
+
+        latitude:
+            19.066600,
+
+        longitude:
+            72.869100,
+    },
+};
+
+// ============================================
+// PARKING LOCATION PRESET UI
+// ============================================
+
+function initParkingLocationPresets() {
+
+    const presetSelect =
+        document.getElementById(
+            "parking-location-preset"
+        );
+
+    if (!presetSelect) {
+        return;
+    }
+
+
+    const nameInput =
+        document.getElementById(
+            "space-name"
+        );
+
+    const addressInput =
+        document.getElementById(
+            "space-address"
+        );
+
+    const cityInput =
+        document.getElementById(
+            "space-city"
+        );
+
+    const zipInput =
+        document.getElementById(
+            "space-zip"
+        );
+
+    const coordinateSection =
+        document.getElementById(
+            "custom-location-coordinates"
+        );
+
+    const latitudeInput =
+        document.getElementById(
+            "space-latitude"
+        );
+
+    const longitudeInput =
+        document.getElementById(
+            "space-longitude"
+        );
+
+
+    // ========================================
+    // READ-ONLY MODE FOR PRESET LOCATIONS
+    // ========================================
+
+    function setLocationFieldsReadOnly(
+        readOnly
+    ) {
+
+        [
+            nameInput,
+            addressInput,
+            cityInput,
+            zipInput,
+        ]
+        .filter(Boolean)
+        .forEach(
+            input => {
+                input.readOnly =
+                    readOnly;
+            }
+        );
+    }
+
+
+    // ========================================
+    // CUSTOM COORDINATE MODE
+    // ========================================
+
+    function setCustomCoordinateMode(
+        enabled
+    ) {
+
+        if (coordinateSection) {
+
+            coordinateSection.style.display =
+                enabled
+                    ? ""
+                    : "none";
+        }
+
+
+        if (latitudeInput) {
+            latitudeInput.required =
+                enabled;
+        }
+
+        if (longitudeInput) {
+            longitudeInput.required =
+                enabled;
+        }
+    }
+
+
+    // ========================================
+    // CLEAR LOCATION VALUES
+    // ========================================
+
+    function clearLocationFields() {
+
+        if (nameInput) {
+            nameInput.value = "";
+        }
+
+        if (addressInput) {
+            addressInput.value = "";
+        }
+
+        if (cityInput) {
+            cityInput.value = "";
+        }
+
+        if (zipInput) {
+            zipInput.value = "";
+        }
+
+        if (latitudeInput) {
+            latitudeInput.value = "";
+        }
+
+        if (longitudeInput) {
+            longitudeInput.value = "";
+        }
+
+
+        pendingParkingLocation.latitude =
+            null;
+
+        pendingParkingLocation.longitude =
+            null;
+    }
+
+
+    // ========================================
+    // APPLY CURRENT PRESET
+    // ========================================
+
+    function applySelectedParkingLocation() {
+
+        const selectedValue =
+            presetSelect.value;
+
+
+        // ------------------------------------
+        // NOTHING SELECTED
+        // ------------------------------------
+
+        if (!selectedValue) {
+
+            clearLocationFields();
+
+            setLocationFieldsReadOnly(
+                false
+            );
+
+            setCustomCoordinateMode(
+                false
+            );
+
+            return;
+        }
+
+
+        // ------------------------------------
+        // CUSTOM PARKING SPACE
+        // ------------------------------------
+
+        if (
+            selectedValue ===
+            "custom"
+        ) {
+
+            clearLocationFields();
+
+            setLocationFieldsReadOnly(
+                false
+            );
+
+            setCustomCoordinateMode(
+                true
+            );
+
+
+            showToast(
+                "Enter your parking address and coordinates manually.",
+                "default"
+            );
+
+
+            nameInput?.focus();
+
+            return;
+        }
+
+
+        // ------------------------------------
+        // DEVELOPMENT PRESET
+        // ------------------------------------
+
+        const location =
+            DEVELOPMENT_PARKING_LOCATIONS[
+                selectedValue
+            ];
+
+
+        if (!location) {
+            return;
+        }
+
+
+        if (nameInput) {
+            nameInput.value =
+                location.name;
+        }
+
+
+        if (addressInput) {
+            addressInput.value =
+                location.address;
+        }
+
+
+        if (cityInput) {
+            cityInput.value =
+                location.city;
+        }
+
+
+        if (zipInput) {
+            zipInput.value =
+                location.postalCode;
+        }
+
+
+        pendingParkingLocation.latitude =
+            location.latitude;
+
+        pendingParkingLocation.longitude =
+            location.longitude;
+
+
+        if (latitudeInput) {
+
+            latitudeInput.value =
+                location.latitude;
+        }
+
+
+        if (longitudeInput) {
+
+            longitudeInput.value =
+                location.longitude;
+        }
+
+
+        setLocationFieldsReadOnly(
+            true
+        );
+
+        setCustomCoordinateMode(
+            false
+        );
+    }
+
+
+    // ========================================
+    // PRESET CHANGE
+    // ========================================
+
+    presetSelect.addEventListener(
+        "change",
+        applySelectedParkingLocation
+    );
+
+
+    // ========================================
+    // MANUAL LATITUDE
+    // ========================================
+
+    latitudeInput?.addEventListener(
+        "input",
+        () => {
+
+            const raw =
+                latitudeInput
+                    .value
+                    .trim();
+
+
+            const value =
+                Number(
+                    raw
+                );
+
+
+            pendingParkingLocation.latitude =
+                raw !== "" &&
+                Number.isFinite(
+                    value
+                )
+                    ? value
+                    : null;
+        }
+    );
+
+
+    // ========================================
+    // MANUAL LONGITUDE
+    // ========================================
+
+    longitudeInput?.addEventListener(
+        "input",
+        () => {
+
+            const raw =
+                longitudeInput
+                    .value
+                    .trim();
+
+
+            const value =
+                Number(
+                    raw
+                );
+
+
+            pendingParkingLocation.longitude =
+                raw !== "" &&
+                Number.isFinite(
+                    value
+                )
+                    ? value
+                    : null;
+        }
+    );
+
+
+    // ========================================
+    // INITIALIZE CURRENT SELECTION
+    //
+    // Important when browser restores
+    // a selected preset after reload.
+    // ========================================
+
+    applySelectedParkingLocation();
+}
+
+// ============================================
+// 8. APPLY FOR RENTING / SPACE DETAILS
 // ============================================
 
 function initApplyForm() {
-    const applyForm = document.getElementById('apply-space-form');
-    if (!applyForm) return;
 
-    // Type Card Selection
-    const typeCards = document.querySelectorAll('.type-card');
-    typeCards.forEach(card => {
-        card.addEventListener('click', () => {
-            typeCards.forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            const radio = card.querySelector('input[type="radio"]');
-            if (radio) radio.checked = true;
-        });
-    });
+    const applyForm =
+        document.getElementById(
+            'apply-space-form'
+        );
 
-    // Photo Upload Dropzone
-    const dropzone = document.getElementById('photo-dropzone');
-    const fileInput = document.getElementById('space-photo-input');
-    const previewGrid = document.getElementById('photo-preview-grid');
-    const btnSamplePhotos = document.getElementById('btn-sample-photos');
+    if (!applyForm) {
+        return;
+    }
 
-    let uploadedPhotos = [...store.data.photos];
+    // ========================================
+    // PARKING TYPE
+    // ========================================
+
+    const typeCards =
+        document.querySelectorAll(
+            '.type-card'
+        );
+
+    typeCards.forEach(
+        card => {
+
+            card.addEventListener(
+                'click',
+                () => {
+
+                    typeCards.forEach(
+                        item => {
+
+                            item.classList.remove(
+                                'selected'
+                            );
+                        }
+                    );
+
+                    card.classList.add(
+                        'selected'
+                    );
+
+                    const radio =
+                        card.querySelector(
+                            'input[type="radio"]'
+                        );
+
+                    if (radio) {
+
+                        radio.checked =
+                            true;
+                    }
+                }
+            );
+        }
+    );
+
+    // ========================================
+    // PHOTO UPLOAD
+    // ========================================
+
+    const dropzone =
+        document.getElementById(
+            'photo-dropzone'
+        );
+
+    const fileInput =
+        document.getElementById(
+            'space-photo-input'
+        );
+
+    const previewGrid =
+        document.getElementById(
+            'photo-preview-grid'
+        );
+
+    let uploadedPhotos = [];
 
     function renderPhotos() {
-        if (!previewGrid) return;
-        previewGrid.innerHTML = '';
-        uploadedPhotos.forEach((src, index) => {
-            const item = document.createElement('div');
-            item.className = 'photo-preview-item';
-            item.innerHTML = `
-                <img src="${src}" alt="Parking space photo ${index + 1}">
-                <button type="button" class="photo-remove-btn" data-index="${index}" title="Remove photo">✕</button>
-            `;
-            previewGrid.appendChild(item);
-        });
 
-        previewGrid.querySelectorAll('.photo-remove-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(btn.dataset.index);
-                uploadedPhotos.splice(idx, 1);
-                renderPhotos();
-                showToast("Photo removed", "default");
-            });
-        });
+    if (!previewGrid) {
+        return;
     }
+
+
+    previewGrid.innerHTML =
+        "";
+
+
+    uploadedPhotos.forEach(
+        (
+            file,
+            index
+        ) => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+
+            item.className =
+                "photo-preview-item";
+
+
+            const image =
+                document.createElement(
+                    "img"
+                );
+
+
+            const objectUrl =
+                URL.createObjectURL(
+                    file
+                );
+
+
+            image.src =
+                objectUrl;
+
+
+            image.alt =
+                `Parking space photo ${index + 1}`;
+
+
+            image.onload =
+                () => {
+
+                    URL.revokeObjectURL(
+                        objectUrl
+                    );
+                };
+
+
+            const removeButton =
+                document.createElement(
+                    "button"
+                );
+
+
+            removeButton.type =
+                "button";
+
+
+            removeButton.className =
+                "photo-remove-btn";
+
+
+            removeButton.textContent =
+                "✕";
+
+
+            removeButton.title =
+                "Remove photo";
+
+
+            removeButton.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+
+                    uploadedPhotos.splice(
+                        index,
+                        1
+                    );
+
+
+                    renderPhotos();
+
+
+                    showToast(
+                        "Photo removed.",
+                        "default"
+                    );
+                }
+            );
+
+
+            item.append(
+                image,
+                removeButton
+            );
+
+
+            previewGrid.appendChild(
+                item
+            );
+        }
+    );
+}
 
     renderPhotos();
 
-    if (dropzone && fileInput) {
-        dropzone.addEventListener('click', () => fileInput.click());
+    if (
+        dropzone &&
+        fileInput
+    ) {
 
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
+        dropzone.addEventListener(
+            'click',
+            () => {
 
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
+                fileInput.click();
+            }
+        );
 
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
+        dropzone.addEventListener(
+            'dragover',
+            event => {
 
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
+                event.preventDefault();
 
-        function handleFiles(files) {
-            Array.from(files).forEach(file => {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        uploadedPhotos.push(event.target.result);
-                        renderPhotos();
-                        showToast(`Uploaded: ${file.name}`, "success");
-                    };
-                    reader.readAsDataURL(file);
+                dropzone.classList.add(
+                    'dragover'
+                );
+            }
+        );
+
+        dropzone.addEventListener(
+            'dragleave',
+            () => {
+
+                dropzone.classList.remove(
+                    'dragover'
+                );
+            }
+        );
+
+        dropzone.addEventListener(
+            'drop',
+            event => {
+
+                event.preventDefault();
+
+                dropzone.classList.remove(
+                    'dragover'
+                );
+
+                handleFiles(
+                    event.dataTransfer.files
+                );
+            }
+        );
+
+        fileInput.addEventListener(
+            'change',
+            event => {
+
+                handleFiles(
+                    event.target.files
+                );
+            }
+        );
+
+        function handleFiles(
+            files
+        ) {
+
+            const incomingFiles =
+                Array.from(
+                    files || []
+                );
+
+
+            for (
+                const file of
+                incomingFiles
+            ) {
+
+                if (
+                    ![
+                        "image/jpeg",
+                        "image/png",
+                        "image/webp",
+                    ].includes(
+                        file.type
+                    )
+                ) {
+
+                    showToast(
+                        `${file.name}: only JPG, PNG, and WebP images are allowed.`,
+                        "danger"
+                    );
+
+                    continue;
                 }
-            });
-        }
-    }
 
-    if (btnSamplePhotos) {
-        btnSamplePhotos.addEventListener('click', (e) => {
-            e.preventDefault();
-            uploadedPhotos = [
-                "hero-parking.jpg",
-                "hero-parking.png"
-            ];
+
+                if (
+                    file.size >
+                    5 * 1024 * 1024
+                ) {
+
+                    showToast(
+                        `${file.name}: image must be 5 MB or smaller.`,
+                        "danger"
+                    );
+
+                    continue;
+                }
+
+
+                if (
+                    uploadedPhotos.length >=
+                    5
+                ) {
+
+                    showToast(
+                        "You can select a maximum of 5 images while listing a parking space.",
+                        "danger"
+                    );
+
+                    break;
+                }
+
+
+                uploadedPhotos.push(
+                    file
+                );
+            }
+
+
             renderPhotos();
-            showToast("Added sample parking facility images!", "success");
-        });
+        }
     }
 
-    // Apply Form Submission
-    applyForm.addEventListener('submit', (e) => {
-        e.preventDefault();
+    // ========================================
+    // APPLY FORM SUBMISSION
+    // ========================================
 
-        // Enforce Authentication Guard on submission
-        const authUser = getAuthenticatedOwner();
+    applyForm.addEventListener(
+    'submit',
+    async event => {
+
+        event.preventDefault();
+
+        // ========================================
+        // AUTHENTICATION CHECK
+        // ========================================
+
+        const authUser =
+            await refreshAuthenticatedOwner();
+
         if (!authUser) {
-            showToast("Access Denied: Please sign in before submitting space details.", "danger");
-            syncAuthGuardUI();
+
+            showToast(
+                "Access denied: please sign in before submitting space details.",
+                "danger"
+            );
+
+            await syncAuthGuardUI();
+
             return;
         }
 
-        const name = document.getElementById('space-name').value.trim();
-        const address = document.getElementById('space-address').value.trim();
-        const city = document.getElementById('space-city').value.trim();
-        const zip = document.getElementById('space-zip').value.trim();
-        const capacity = parseInt(document.getElementById('space-capacity').value) || 20;
-        const rate = parseFloat(document.getElementById('space-rate').value) || 4.50;
-        const dailyMax = parseFloat(document.getElementById('space-daily-max').value) || 28.00;
+        if (!authUser.email_verified) {
 
-        const selectedTypeInput = document.querySelector('input[name="space-type"]:checked');
-        const spaceType = selectedTypeInput ? selectedTypeInput.value : 'covered';
+            showToast(
+                "Please verify your email before submitting space details.",
+                "danger"
+            );
 
-        const checkedAmenities = Array.from(document.querySelectorAll('input[name="amenities"]:checked')).map(cb => cb.value);
+            showOtpVerificationDialog(
+                authUser.email
+            );
 
-        // Update Store
-        store.data.space.name = name;
-        store.data.space.address = address;
-        store.data.space.city = city;
-        store.data.space.zip = zip;
-        store.data.space.capacity = capacity;
-        store.data.space.hourlyRate = rate;
-        store.data.space.dailyMax = dailyMax;
-        store.data.space.type = spaceType;
-        store.data.space.amenities = checkedAmenities;
-        store.data.photos = uploadedPhotos;
-        store.data.space.status = "OPEN";
-        store.save();
-
-        showToast("Space Listed Successfully! Entering Active Control Panel...", "success");
-        setTimeout(() => {
-            window.location.href = "owner-dashboard.html";
-        }, 900);
-    });
-}
-
-// ============================================
-// 8. ACTIVE CONTROL PANEL (DASHBOARD)
-// ============================================
-
-function initOwnerDashboard() {
-    const isDashboard = document.querySelector('.owner-dashboard-root');
-    if (!isDashboard) return;
-
-    // Enforce Route Protection
-    const authUser = getAuthenticatedOwner();
-    if (!authUser) {
-        return; // Guard already redirects in syncAuthGuardUI
-    }
-
-    // 1. Availability Master Switch
-    const btnToggleAvailability = document.getElementById('btn-toggle-availability');
-    const beaconContainer = document.getElementById('status-beacon-container');
-    const beaconText = document.getElementById('beacon-status-text');
-    const availabilitySubtext = document.getElementById('availability-subtext');
-    const statSpaceStatus = document.getElementById('stat-space-status');
-
-    function updateAvailabilityUI(status) {
-        store.data.space.status = status;
-        store.save();
-
-        if (status === 'OPEN') {
-            if (beaconContainer) {
-                beaconContainer.className = 'status-beacon-container open';
-                beaconText.textContent = "OPEN • ACCEPTING VEHICLES";
-            }
-            if (availabilitySubtext) {
-                availabilitySubtext.textContent = "Your space is currently LIVE on the ParkSmart driver search and accepting reservations.";
-            }
-            if (btnToggleAvailability) {
-                btnToggleAvailability.className = 'master-toggle-btn btn-turn-off';
-                btnToggleAvailability.innerHTML = `
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
-                    <span>Close Parking Space</span>
-                `;
-            }
-            if (statSpaceStatus) {
-                statSpaceStatus.textContent = "LIVE (OPEN)";
-                statSpaceStatus.style.color = "var(--success)";
-            }
-        } else {
-            if (beaconContainer) {
-                beaconContainer.className = 'status-beacon-container closed';
-                beaconText.textContent = "CLOSED • RESERVATIONS PAUSED";
-            }
-            if (availabilitySubtext) {
-                availabilitySubtext.textContent = "Your parking space is marked closed. No new drivers can book or enter until reopened.";
-            }
-            if (btnToggleAvailability) {
-                btnToggleAvailability.className = 'master-toggle-btn btn-turn-on';
-                btnToggleAvailability.innerHTML = `
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    <span>Open Parking Space</span>
-                `;
-            }
-            if (statSpaceStatus) {
-                statSpaceStatus.textContent = "CLOSED";
-                statSpaceStatus.style.color = "var(--danger)";
-            }
-        }
-    }
-
-    if (btnToggleAvailability) {
-        updateAvailabilityUI(store.data.space.status || 'OPEN');
-
-        btnToggleAvailability.addEventListener('click', () => {
-            const current = store.data.space.status || 'OPEN';
-            const next = current === 'OPEN' ? 'CLOSED' : 'OPEN';
-            updateAvailabilityUI(next);
-            showToast(`Space status changed to: ${next}`, next === 'OPEN' ? 'success' : 'danger');
-        });
-    }
-
-    // 2. Real-Time Pricing Adjustment
-    const priceSlider = document.getElementById('pricing-slider');
-    const livePriceVal = document.getElementById('live-price-val');
-    const estDailyVal = document.getElementById('est-daily-val');
-    const estMonthlyVal = document.getElementById('est-monthly-val');
-    const btnSaveRates = document.getElementById('btn-save-rates');
-    const surgePills = document.querySelectorAll('.surge-preset-pill');
-
-    function calculateRevenue(rate) {
-        const capacity = store.data.space.capacity || 25;
-        const avgHours = 7.5;
-        const occupancyFactor = 0.72;
-        const daily = (rate * capacity * avgHours * occupancyFactor);
-        const monthly = daily * 26;
-
-        if (estDailyVal) estDailyVal.textContent = `$${daily.toFixed(0)}`;
-        if (estMonthlyVal) estMonthlyVal.textContent = `$${monthly.toFixed(0)}`;
-    }
-
-    if (priceSlider && livePriceVal) {
-        priceSlider.value = store.data.space.hourlyRate || 4.50;
-        livePriceVal.textContent = parseFloat(priceSlider.value).toFixed(2);
-        calculateRevenue(parseFloat(priceSlider.value));
-
-        priceSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            livePriceVal.textContent = val.toFixed(2);
-            calculateRevenue(val);
-        });
-
-        // Surge Presets
-        surgePills.forEach(pill => {
-            pill.addEventListener('click', () => {
-                surgePills.forEach(p => p.classList.remove('active'));
-                pill.classList.add('active');
-                const multiplier = parseFloat(pill.dataset.multiplier);
-                const base = 4.50;
-                const newRate = +(base * multiplier).toFixed(2);
-                priceSlider.value = newRate;
-                livePriceVal.textContent = newRate.toFixed(2);
-                calculateRevenue(newRate);
-                showToast(`Applied ${pill.textContent.trim()} surge rate!`, "default");
-            });
-        });
-
-        if (btnSaveRates) {
-            btnSaveRates.addEventListener('click', () => {
-                const newPrice = parseFloat(priceSlider.value);
-                store.data.space.hourlyRate = newPrice;
-                store.save();
-                showToast(`Real-time pricing updated to $${newPrice.toFixed(2)}/hr! Syncing with Driver App...`, "success");
-            });
-        }
-    }
-
-    // 3. Bookings, Access, Maps, Edit Spot Modal
-    initBookingsTable();
-    initAccessControl();
-    initGoogleMapsIntegration();
-    initSpotDetailsModal();
-}
-
-// ============================================
-// 9. BOOKINGS TABLE & ACCESS CONTROL
-// ============================================
-
-function initBookingsTable() {
-    const tableBody = document.getElementById('bookings-table-body');
-    const filterPills = document.querySelectorAll('.table-pill-btn');
-    const searchInput = document.getElementById('booking-search-input');
-    const btnAddWalkIn = document.getElementById('btn-add-walkin');
-
-    if (!tableBody) return;
-
-    let currentFilter = 'all';
-    let searchQuery = '';
-
-    function renderBookings() {
-        tableBody.innerHTML = '';
-
-        const filtered = store.data.bookings.filter(b => {
-            const matchesFilter = currentFilter === 'all' || b.status === currentFilter;
-            const matchesSearch = !searchQuery || 
-                b.driverName.toLowerCase().includes(searchQuery) ||
-                b.plate.toLowerCase().includes(searchQuery) ||
-                b.id.toLowerCase().includes(searchQuery);
-            return matchesFilter && matchesSearch;
-        });
-
-        if (filtered.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 32px; color: var(--gray-400);">
-                        No bookings matching this filter.
-                    </td>
-                </tr>
-            `;
             return;
         }
 
-        filtered.forEach(b => {
-            const tr = document.createElement('tr');
-            
-            let statusLabel = b.status.toUpperCase();
-            if (b.status === 'parked') statusLabel = '🟢 Parked (Active)';
-            if (b.status === 'reserved') statusLabel = '🔵 Reserved';
-            if (b.status === 'completed') statusLabel = '⚪ Completed';
-            if (b.status === 'cancelled') statusLabel = '🔴 Cancelled';
 
-            let actionBtns = '';
-            if (b.status === 'reserved') {
-                actionBtns = `
-                    <button class="btn-action-sm" onclick="handleCheckIn('${b.id}')">Check-In</button>
-                    <button class="btn-action-sm danger" onclick="handleCancelBooking('${b.id}')">Cancel</button>
-                `;
-            } else if (b.status === 'parked') {
-                actionBtns = `
-                    <button class="btn-action-sm" onclick="handleComplete('${b.id}')">Check-Out</button>
-                    <button class="btn-action-sm danger" onclick="handleCancelBooking('${b.id}')">Cancel</button>
-                `;
-            } else {
-                actionBtns = `<span style="font-size: 0.8rem; color: var(--gray-400);">Archived</span>`;
-            }
+        // ========================================
+        // READ FORM VALUES
+        // ========================================
 
-            tr.innerHTML = `
-                <td>
-                    <div class="driver-info-cell">
-                        <div class="driver-avatar">${b.avatar}</div>
-                        <div>
-                            <strong>${b.driverName}</strong>
-                            <div style="font-size: 0.76rem; color: var(--gray-400);">${b.id}</div>
-                        </div>
-                    </div>
-                </td>
-                <td><span class="license-plate-tag">${b.plate}</span></td>
-                <td><strong>${b.spotNum}</strong></td>
-                <td>
-                    <div style="font-size: 0.85rem;">${b.checkIn} – ${b.checkOut}</div>
-                    <div style="font-size: 0.75rem; color: var(--gray-400);">${b.vehicle}</div>
-                </td>
-                <td><strong>$${b.amount.toFixed(2)}</strong></td>
-                <td><span class="status-badge ${b.status}">${statusLabel}</span></td>
-                <td>${actionBtns}</td>
-            `;
+        const name =
+            document
+                .getElementById(
+                    'space-name'
+                )
+                .value
+                .trim();
 
-            tableBody.appendChild(tr);
-        });
+        const address =
+            document
+                .getElementById(
+                    'space-address'
+                )
+                .value
+                .trim();
 
-        updateOccupancyDisplay();
-    }
+        const city =
+            document
+                .getElementById(
+                    'space-city'
+                )
+                .value
+                .trim();
 
-    window.handleCheckIn = (id) => {
-        const booking = store.data.bookings.find(b => b.id === id);
-        if (booking) {
-            booking.status = 'parked';
-            store.save();
-            renderBookings();
-            showToast(`Driver ${booking.driverName} checked in to ${booking.spotNum}!`, "success");
-        }
-    };
+        const zip =
+            document
+                .getElementById(
+                    'space-zip'
+                )
+                .value
+                .trim();
 
-    window.handleComplete = (id) => {
-        const booking = store.data.bookings.find(b => b.id === id);
-        if (booking) {
-            booking.status = 'completed';
-            store.save();
-            renderBookings();
-            showToast(`Driver ${booking.driverName} checked out. Spot ${booking.spotNum} is now available.`, "success");
-        }
-    };
+        const accessGate =
+            document
+                .getElementById(
+                    'space-access-gate'
+                )
+                ?.value
+                .trim() || null;
 
-    window.handleCancelBooking = (id) => {
-        const booking = store.data.bookings.find(b => b.id === id);
-        if (booking) {
-            const confirmed = confirm(`Cancel booking ${booking.id} for ${booking.driverName}?\n\nCancellation policy applied: Full refund to driver if cancelled >1 hour prior.`);
-            if (confirmed) {
-                booking.status = 'cancelled';
-                store.save();
-                renderBookings();
-                showToast(`Booking ${booking.id} cancelled. Driver notified and spot released.`, "danger");
-            }
-        }
-    };
+        const capacity =
+            parseInt(
+                document
+                    .getElementById(
+                        'space-capacity'
+                    )
+                    .value,
+                10
+            ) || 0;
 
-    filterPills.forEach(pill => {
-        pill.addEventListener('click', () => {
-            filterPills.forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
-            currentFilter = pill.dataset.filter;
-            renderBookings();
-        });
-    });
+        const standardBays =
+            parseInt(
+                document
+                    .getElementById(
+                        'space-standard-bays'
+                    )
+                    ?.value,
+                10
+            ) || 0;
 
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value.toLowerCase().trim();
-            renderBookings();
-        });
-    }
+        const compactBays =
+            parseInt(
+                document
+                    .getElementById(
+                        'space-compact-bays'
+                    )
+                    ?.value,
+                10
+            ) || 0;
 
-    if (btnAddWalkIn) {
-        btnAddWalkIn.addEventListener('click', () => {
-            const driverName = prompt("Enter Driver Name for Walk-in Renter:", "Guest Driver");
-            if (!driverName) return;
-            const plate = prompt("Enter Vehicle License Plate:", "4ABC99") || "CUSTOM";
-            
-            const newId = `BK-${Math.floor(1000 + Math.random() * 9000)}`;
-            store.data.bookings.unshift({
-                id: newId,
-                driverName: driverName,
-                avatar: driverName.substring(0, 2).toUpperCase(),
-                phone: "+1 555-0100",
-                plate: plate.toUpperCase(),
-                spotNum: `Bay #${Math.floor(1 + Math.random() * 20)}`,
-                vehicle: "Walk-in Passenger Car",
-                checkIn: "Just now",
-                checkOut: "2 hours",
-                status: "parked",
-                amount: (store.data.space.hourlyRate || 4.50) * 2
-            });
-            store.save();
-            renderBookings();
-            showToast(`Walk-in driver ${driverName} registered and parked!`, "success");
-        });
-    }
+        const evBays =
+            parseInt(
+                document
+                    .getElementById(
+                        'space-ev-bays'
+                    )
+                    ?.value,
+                10
+            ) || 0;
 
-    renderBookings();
-}
+        const motorcycleBays =
+            parseInt(
+                document
+                    .getElementById(
+                        'space-motorcycle-bays'
+                    )
+                    ?.value,
+                10
+            ) || 0;
 
-function updateOccupancyDisplay() {
-    const activeCount = store.data.bookings.filter(b => b.status === 'parked').length;
-    const capacity = store.data.space.capacity || 25;
-    const available = Math.max(0, capacity - activeCount);
+        const scooterBays =
+            parseInt(
+                document
+                    .getElementById(
+                        'space-scooter-bays'
+                    )
+                    ?.value,
+                10
+            ) || 0;
 
-    const statAvailable = document.getElementById('stat-available-spots');
-    const statOccupancy = document.getElementById('stat-occupancy-rate');
-    const occupancyProgress = document.getElementById('occupancy-bar-progress');
+        const rate =
+            parseFloat(
+                document
+                    .getElementById(
+                        'space-rate'
+                    )
+                    .value
+            );
 
-    if (statAvailable) statAvailable.textContent = `${available} / ${capacity}`;
-    if (statOccupancy) {
-        const ratePct = Math.round((activeCount / capacity) * 100);
-        statOccupancy.textContent = `${ratePct}%`;
-        if (occupancyProgress) {
-            occupancyProgress.style.width = `${ratePct}%`;
-        }
-    }
-}
+        const dailyMaxInput =
+            document
+                .getElementById(
+                    'space-daily-max'
+                )
+                ?.value;
 
-function initAccessControl() {
-    const gateCodeEl = document.getElementById('dash-gate-code');
-    const btnRegenGateCode = document.getElementById('btn-regen-gate-code');
-    const btnTriggerBarrier = document.getElementById('btn-trigger-barrier');
-    const barrierIndicator = document.getElementById('barrier-status-indicator');
-    const btnCopyApiKey = document.getElementById('btn-copy-api-key');
+        const dailyMax =
+            dailyMaxInput
+                ? parseFloat(
+                    dailyMaxInput
+                )
+                : null;
 
-    if (gateCodeEl) {
-        gateCodeEl.textContent = store.data.space.gateCode || "8492#";
-    }
+        const scheduleType =
+            document
+                .getElementById(
+                    'space-schedule'
+                )
+                ?.value ||
+            '24-7';
 
-    if (btnRegenGateCode) {
-        btnRegenGateCode.addEventListener('click', () => {
-            const newCode = `${Math.floor(1000 + Math.random() * 9000)}#`;
-            store.data.space.gateCode = newCode;
-            store.save();
-            if (gateCodeEl) gateCodeEl.textContent = newCode;
-            showToast(`Generated new Gate Access PIN: ${newCode}`, "success");
-        });
-    }
+        const selectedTypeInput =
+            document.querySelector(
+                'input[name="space-type"]:checked'
+            );
 
-    if (btnTriggerBarrier && barrierIndicator) {
-        let isOpening = false;
-        btnTriggerBarrier.addEventListener('click', () => {
-            if (isOpening) return;
-            isOpening = true;
+        const spaceType =
+            selectedTypeInput
+                ? selectedTypeInput.value
+                : 'covered';
 
-            barrierIndicator.className = 'barrier-status-indicator unlocked';
-            barrierIndicator.innerHTML = `<span>🟢 Barrier Open</span>`;
-            btnTriggerBarrier.textContent = "Opening Barrier...";
-            showToast("Signal sent to Gate Controller: Barrier Opened!", "success");
+        const checkedAmenities =
+            Array.from(
+                document.querySelectorAll(
+                    'input[name="amenities"]:checked'
+                )
+            )
+            .map(
+                checkbox =>
+                    checkbox.value
+            );
 
-            setTimeout(() => {
-                barrierIndicator.className = 'barrier-status-indicator locked';
-                barrierIndicator.innerHTML = `<span>🔒 Barrier Locked</span>`;
-                btnTriggerBarrier.textContent = "Trigger Barrier Gate";
-                isOpening = false;
-                showToast("Gate cycle complete: Barrier Lowered & Locked.", "default");
-            }, 4500);
-        });
-    }
 
-    if (btnCopyApiKey) {
-        btnCopyApiKey.addEventListener('click', () => {
-            const key = store.data.space.apiKey || "pk_live_sec_9942a78f0b12c";
-            navigator.clipboard.writeText(key).then(() => {
-                showToast("API Access Key copied to clipboard!", "success");
-            }).catch(() => {
-                showToast(`API Key: ${key}`, "default");
-            });
-        });
-    }
-}
+            // ========================================
+            // FRONTEND VALIDATION
+            // ========================================
 
-// ============================================
-// 10. GOOGLE MAPS INTEGRATION & SPOT DETAILS MODAL
-// ============================================
+            if (
+                pendingParkingLocation.latitude === null ||
+                pendingParkingLocation.longitude === null ||
+                pendingParkingLocation.latitude < -90 ||
+                pendingParkingLocation.latitude > 90 ||
+                pendingParkingLocation.longitude < -180 ||
+                pendingParkingLocation.longitude > 180
+            ) {
 
-function initGoogleMapsIntegration() {
-    const mapElement = document.getElementById('owner-google-map');
-    const latDisplay = document.getElementById('map-lat-val');
-    const lngDisplay = document.getElementById('map-lng-val');
-    const btnSaveLocation = document.getElementById('btn-save-location');
-    const addressSearchInput = document.getElementById('map-address-search');
-    const btnSearchMap = document.getElementById('btn-search-map');
+                showToast(
+                    "Please select a parking preset or enter valid latitude and longitude coordinates.",
+                    "danger"
+                );
 
-    if (!mapElement) return;
-
-    let currentLat = store.data.space.location.lat || 40.7128;
-    let currentLng = store.data.space.location.lng || -74.0060;
-
-    function updateCoordsUI(lat, lng) {
-        currentLat = lat;
-        currentLng = lng;
-        store.data.space.location.lat = lat;
-        store.data.space.location.lng = lng;
-        if (latDisplay) latDisplay.textContent = lat.toFixed(5);
-        if (lngDisplay) lngDisplay.textContent = lng.toFixed(5);
-    }
-
-    updateCoordsUI(currentLat, currentLng);
-
-    let googleMapInstance = null;
-    let markerInstance = null;
-
-    function setupFallbackCanvas() {
-        mapElement.innerHTML = `
-            <div style="position: relative; width: 100%; height: 100%; background: linear-gradient(135deg, #e5e9f2 0%, #f0f4f8 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;">
-                <svg width="100%" height="100%" style="position: absolute; inset: 0; opacity: 0.4;">
-                    <defs>
-                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#grid)" />
-                    <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#fff" stroke-width="14" />
-                    <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8 6" />
-                    <line x1="45%" y1="0" x2="45%" y2="100%" stroke="#fff" stroke-width="12" />
-                    <line x1="75%" y1="0" x2="75%" y2="100%" stroke="#fff" stroke-width="10" />
-                </svg>
-
-                <div id="interactive-map-pin" style="position: absolute; top: 45%; left: 45%; transform: translate(-50%, -100%); cursor: grab; z-index: 10; display: flex; flex-direction: column; align-items: center;">
-                    <div style="background: var(--navy-900); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.3); margin-bottom: 4px;">
-                        <span>📍 ${store.data.space.name || "Parking Entrance"}</span>
-                    </div>
-                    <svg width="42" height="42" viewBox="0 0 24 24" fill="#3b6cf5" stroke="#ffffff" stroke-width="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3" fill="#ffffff"/>
-                    </svg>
-                </div>
-
-                <div class="map-interactive-overlay">
-                    <strong>Google Maps Preview</strong>
-                    <div style="font-size: 0.78rem; color: var(--gray-600); margin-top: 2px;">
-                        Drag marker to calibrate parking facility entrance & GPS coordinates.
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const pin = document.getElementById('interactive-map-pin');
-        if (pin) {
-            let isDragging = false;
-            pin.addEventListener('mousedown', () => { isDragging = true; pin.style.cursor = 'grabbing'; });
-            window.addEventListener('mouseup', () => { isDragging = false; pin.style.cursor = 'grab'; });
-            mapElement.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                const rect = mapElement.getBoundingClientRect();
-                const x = Math.max(20, Math.min(rect.width - 20, e.clientX - rect.left));
-                const y = Math.max(30, Math.min(rect.height - 20, e.clientY - rect.top));
-
-                pin.style.left = `${x}px`;
-                pin.style.top = `${y}px`;
-
-                const newLat = +(40.7128 + ((rect.height / 2 - y) * 0.00035)).toFixed(5);
-                const newLng = +(-74.0060 + ((x - rect.width / 2) * 0.00035)).toFixed(5);
-                updateCoordsUI(newLat, newLng);
-            });
-        }
-    }
-
-    if (window.google && window.google.maps) {
-        try {
-            const mapOptions = {
-                center: { lat: currentLat, lng: currentLng },
-                zoom: 16,
-                mapId: "DEMO_MAP_ID",
-                disableDefaultUI: false
-            };
-            googleMapInstance = new google.maps.Map(mapElement, mapOptions);
-
-            if (google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
-                markerInstance = new google.maps.marker.AdvancedMarkerElement({
-                    map: googleMapInstance,
-                    position: { lat: currentLat, lng: currentLng },
-                    gmpDraggable: true,
-                    title: store.data.space.name
-                });
-                markerInstance.addListener('dragend', () => {
-                    const pos = markerInstance.position;
-                    updateCoordsUI(pos.lat, pos.lng);
-                    showToast(`Updated entrance coordinates: ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`, "default");
-                });
-            } else {
-                markerInstance = new google.maps.Marker({
-                    map: googleMapInstance,
-                    position: { lat: currentLat, lng: currentLng },
-                    draggable: true,
-                    title: store.data.space.name
-                });
-                markerInstance.addListener('dragend', (e) => {
-                    updateCoordsUI(e.latLng.lat(), e.latLng.lng());
-                    showToast(`Updated entrance coordinates: ${e.latLng.lat().toFixed(5)}, ${e.latLng.lng().toFixed(5)}`, "default");
-                });
-            }
-        } catch (err) {
-            console.warn("Google Maps init fallback:", err);
-            setupFallbackCanvas();
-        }
-    } else {
-        setupFallbackCanvas();
-    }
-
-    if (btnSearchMap && addressSearchInput) {
-        btnSearchMap.addEventListener('click', () => {
-            const query = addressSearchInput.value.trim();
-            if (!query) {
-                showToast("Please enter an address or landmark", "danger");
                 return;
             }
-            let foundLat = +(40.7128 + (Math.random() - 0.5) * 0.02).toFixed(5);
-            let foundLng = +(-74.0060 + (Math.random() - 0.5) * 0.02).toFixed(5);
 
-            updateCoordsUI(foundLat, foundLng);
-            showToast(`Location found for "${query}"! GPS calibrated.`, "success");
+            if (
+                standardBays +
+                compactBays +
+                evBays +
+                motorcycleBays +
+                scooterBays >
+                capacity
+            ) {
 
-            if (googleMapInstance && markerInstance) {
-                googleMapInstance.setCenter({ lat: foundLat, lng: foundLng });
-                if (markerInstance.position) {
-                    markerInstance.position = { lat: foundLat, lng: foundLng };
+                showToast(
+                    "The total number of car, EV, motorcycle, and scooter bays cannot exceed the parking capacity.",
+                    "danger"
+                );
+
+                return;
+            }
+
+            if (
+                !Number.isFinite(rate) ||
+                rate < 0
+            ) {
+
+                showToast(
+                    "Please enter a valid hourly rate.",
+                    "danger"
+                );
+
+                return;
+            }
+
+
+            // ========================================
+            // BUILD DATABASE PAYLOAD
+            // ========================================
+
+            const parkingPayload = {
+
+                name,
+
+                description:
+                    null,
+
+                address,
+
+                city,
+
+                postal_code:
+                    zip,
+
+                access_gate:
+                    accessGate,
+
+                latitude:
+                    pendingParkingLocation.latitude,
+
+                longitude:
+                    pendingParkingLocation.longitude,
+
+                parking_type:
+                    spaceType,
+
+                capacity,
+
+                standard_bays:
+                    standardBays,
+
+                compact_bays:
+                    compactBays,
+
+                ev_bays:
+                    evBays,
+
+                motorcycle_bays:
+                    motorcycleBays,
+
+                scooter_bays:
+                    scooterBays,
+
+                price_per_hour:
+                    rate,
+
+                daily_max:
+                    dailyMax,
+
+                schedule_type:
+                    scheduleType,
+
+                amenities:
+                    checkedAmenities,
+            };
+
+
+            // ========================================
+            // SAVE THROUGH EXPRESS API
+            // ========================================
+
+            try {
+
+                const result =
+                    await ParkSmartAPI
+                        .createParkingSpace(
+                            parkingPayload
+                        );
+
+
+                const createdParking =
+                    result.parking_space;
+
+
+                if (!createdParking?.id) {
+
+                    throw new Error(
+                        "Parking space was created but no parking ID was returned."
+                    );
+                }
+
+
+                // ========================================
+                // UPLOAD REAL PARKING IMAGES
+                // ========================================
+
+                if (
+                    uploadedPhotos.length >
+                    0
+                ) {
+
+                    try {
+
+                        const imageResult =
+                            await ParkSmartAPI
+                                .uploadOwnerParkingImages(
+                                    createdParking.id,
+                                    uploadedPhotos
+                                );
+
+
+                        showToast(
+                            imageResult.message ||
+                            "Parking images uploaded successfully.",
+                            "success"
+                        );
+
+
+                    } catch (imageError) {
+
+                        console.error(
+                            "Parking created, but image upload failed:",
+                            imageError
+                        );
+
+
+                        showToast(
+                            "Parking space was created, but some images could not be uploaded. You can add them from the dashboard.",
+                            "danger"
+                        );
+                    }
+                }
+
+
+                showToast(
+                    "Parking space listed successfully.",
+                    "success"
+                );
+
+
+                window.location.href =
+                    `/pages/owner-dashboard.html?space=${encodeURIComponent(
+                        createdParking.id
+                    )}`;
+
+
+            } catch (error) {
+
+                console.error(
+                    "Parking application submission failed:",
+                    error
+                );
+
+
+                showToast(
+                    error.message ||
+                    "Unable to submit parking space.",
+                    "danger"
+                );
+            }
+        }
+    );
+}
+
+// ============================================
+// 9. REAL OWNER DASHBOARD
+// ============================================
+
+let ownerParkingSpaces = [];
+let activeOwnerParkingSpace = null;
+let activeOwnerBookings = [];
+let activeBookingFilter = "all";
+
+
+function parkingTypeLabel(
+    type
+) {
+
+    const labels = {
+        covered:
+            "Covered Garage",
+
+        open:
+            "Open-Air Parking",
+
+        ev:
+            "EV Parking",
+
+        valet:
+            "Valet / VIP Parking",
+    };
+
+    return labels[type] ||
+        type ||
+        "Parking Space";
+}
+
+
+function parkingScheduleLabel(
+    schedule
+) {
+
+    const labels = {
+        "24-7":
+            "24/7 Access",
+
+        business:
+            "Business Hours",
+
+        night:
+            "Overnight",
+
+        weekend:
+            "Weekends",
+    };
+
+    return labels[schedule] ||
+        schedule ||
+        "";
+}
+
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+    if (element) {
+        element.textContent =
+            value;
+    }
+}
+
+    // ============================================
+    // REAL OWNER BOOKING MANAGEMENT
+    // ============================================
+
+    function formatOwnerCurrency(
+        value
+    ) {
+
+        const amount =
+            Number(value) || 0;
+
+
+        return new Intl.NumberFormat(
+            "en-IN",
+            {
+                style: "currency",
+                currency: "INR",
+                minimumFractionDigits: 2,
+            }
+        ).format(amount);
+    }
+
+
+    function formatOwnerDateTime(
+        value
+    ) {
+
+        if (!value) {
+            return "—";
+        }
+
+
+        const date =
+            new Date(value);
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return "—";
+        }
+
+
+        return date.toLocaleString(
+            "en-IN",
+            {
+                dateStyle: "medium",
+                timeStyle: "short",
+            }
+        );
+    }
+
+
+    function getOwnerBookingDisplayStatus(
+        booking
+    ) {
+
+        const status =
+            String(
+                booking.status || ""
+            ).toLowerCase();
+
+
+        if (
+            status === "cancelled"
+        ) {
+            return "cancelled";
+        }
+
+
+        if (
+            status === "completed"
+        ) {
+            return "completed";
+        }
+
+
+        if (
+            status === "active"
+        ) {
+            return "active";
+        }
+
+
+        const now =
+            Date.now();
+
+
+        const start =
+            new Date(
+                booking.start_time
+            ).getTime();
+
+
+        const end =
+            new Date(
+                booking.end_time
+            ).getTime();
+
+
+        if (
+            Number.isFinite(start) &&
+            Number.isFinite(end)
+        ) {
+
+            if (
+                start <= now &&
+                end > now &&
+                (
+                    status === "confirmed" ||
+                    status === "pending"
+                )
+            ) {
+                return "active";
+            }
+
+
+            if (
+                start > now &&
+                (
+                    status === "confirmed" ||
+                    status === "pending"
+                )
+            ) {
+                return "upcoming";
+            }
+        }
+
+
+        return status || "pending";
+    }
+
+
+    function createBookingBadge(
+        text,
+        type = "default"
+    ) {
+
+        const badge =
+            document.createElement(
+                "span"
+            );
+
+
+        badge.className =
+            `booking-status-badge ${type}`;
+
+
+        badge.textContent =
+            text;
+
+
+        return badge;
+    }
+
+
+    function getVehicleDescription(
+        booking
+    ) {
+
+        const manufacturer =
+            booking.manufacturer ||
+            "";
+
+
+        const model =
+            booking.model ||
+            "";
+
+
+        const vehicleName =
+            [
+                manufacturer,
+                model,
+            ]
+            .filter(Boolean)
+            .join(" ");
+
+
+        return vehicleName ||
+            booking.vehicle_type ||
+            "Vehicle";
+    }
+
+
+    function renderOwnerBookings(
+        bookings
+    ) {
+
+        const body =
+            document.getElementById(
+                "owner-bookings-table-body"
+            );
+
+
+        const wrapper =
+            document.getElementById(
+                "owner-bookings-table-wrapper"
+            );
+
+
+        const empty =
+            document.getElementById(
+                "owner-bookings-empty"
+            );
+
+
+        const count =
+            document.getElementById(
+                "owner-booking-count"
+            );
+
+
+        if (
+            !body ||
+            !wrapper ||
+            !empty
+        ) {
+            return;
+        }
+
+
+        body.innerHTML =
+            "";
+
+
+        if (count) {
+
+            count.textContent =
+                `${bookings.length} ${
+                    bookings.length === 1
+                        ? "Booking"
+                        : "Bookings"
+                }`;
+        }
+
+
+        if (
+            bookings.length === 0
+        ) {
+
+            wrapper.style.display =
+                "none";
+
+
+            empty.style.display =
+                "";
+
+
+            return;
+        }
+
+
+        empty.style.display =
+            "none";
+
+
+        wrapper.style.display =
+            "";
+
+
+        bookings.forEach(
+            booking => {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                // ====================================
+                // DRIVER
+                // ====================================
+
+                const driverCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const driverName =
+                    document.createElement(
+                        "strong"
+                    );
+
+
+                driverName.textContent =
+                    booking.driver_name ||
+                    "Driver";
+
+
+                const driverPhone =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                driverPhone.className =
+                    "booking-secondary-text";
+
+
+                driverPhone.textContent =
+                    booking.driver_phone ||
+                    "Phone unavailable";
+
+
+                driverCell.append(
+                    driverName,
+                    driverPhone
+                );
+
+
+                // ====================================
+                // VEHICLE
+                // ====================================
+
+                const vehicleCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const registration =
+                    document.createElement(
+                        "strong"
+                    );
+
+
+                registration.textContent =
+                    booking.registration_number ||
+                    "—";
+
+
+                const vehicleDescription =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                vehicleDescription.className =
+                    "booking-secondary-text";
+
+
+                vehicleDescription.textContent =
+                    [
+                        getVehicleDescription(
+                            booking
+                        ),
+                        booking.color,
+                        booking.vehicle_type,
+                    ]
+                    .filter(Boolean)
+                    .join(" • ");
+
+
+                vehicleCell.append(
+                    registration,
+                    vehicleDescription
+                );
+
+
+                // ====================================
+                // BOOKING REFERENCE
+                // ====================================
+
+                const bookingCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const bookingReference =
+                    document.createElement(
+                        "strong"
+                    );
+
+
+                bookingReference.textContent =
+                    booking.booking_reference ||
+                    String(
+                        booking.id ||
+                        ""
+                    ).slice(
+                        0,
+                        8
+                    );
+
+
+                bookingCell.appendChild(
+                    bookingReference
+                );
+
+
+                // ====================================
+                // SCHEDULE
+                // ====================================
+
+                const scheduleCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const start =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                start.textContent =
+                    formatOwnerDateTime(
+                        booking.start_time
+                    );
+
+
+                const end =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                end.className =
+                    "booking-secondary-text";
+
+
+                end.textContent =
+                    `to ${formatOwnerDateTime(
+                        booking.end_time
+                    )}`;
+
+
+                scheduleCell.append(
+                    start,
+                    end
+                );
+
+
+                // ====================================
+                // BAY TYPE
+                // ====================================
+
+                const bayCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                bayCell.textContent =
+                    booking.reserved_bay_type
+                        ? booking
+                            .reserved_bay_type
+                            .replace(
+                                /_/g,
+                                " "
+                            )
+                        : "—";
+
+
+                // ====================================
+                // AMOUNT
+                // ====================================
+
+                const amountCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                amountCell.textContent =
+                    formatOwnerCurrency(
+                        booking.total_amount
+                    );
+
+
+                // ====================================
+                // BOOKING STATUS
+                // ====================================
+
+                const statusCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const displayStatus =
+                    getOwnerBookingDisplayStatus(
+                        booking
+                    );
+
+
+                statusCell.appendChild(
+                    createBookingBadge(
+                        displayStatus
+                            .replace(
+                                /_/g,
+                                " "
+                            )
+                            .toUpperCase(),
+                        displayStatus
+                    )
+                );
+
+
+                // ====================================
+                // PAYMENT STATUS
+                // ====================================
+
+                const paymentCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const paymentStatus =
+                    String(
+                        booking.payment_status ||
+                        "unpaid"
+                    ).toLowerCase();
+
+
+                paymentCell.appendChild(
+                    createBookingBadge(
+                        paymentStatus
+                            .replace(
+                                /_/g,
+                                " "
+                            )
+                            .toUpperCase(),
+                        paymentStatus ===
+                            "paid"
+                            ? "paid"
+                            : paymentStatus
+                    )
+                );
+
+                // ====================================
+                // OWNER ACTIONS
+                // ====================================
+
+                const actionCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const bookingStatus =
+                    String(
+                        booking.status || ""
+                    ).toLowerCase();
+
+
+                const bookingPaymentStatus =
+                    String(
+                        booking.payment_status ||
+                        ""
+                    ).toLowerCase();
+
+
+                if (
+                    bookingStatus ===
+                        "confirmed" &&
+                    bookingPaymentStatus ===
+                        "paid"
+                ) {
+
+                    const startButton =
+                        document.createElement(
+                            "button"
+                        );
+
+
+                    startButton.type =
+                        "button";
+
+
+                    startButton.className =
+                        "btn-primary";
+
+
+                    startButton.textContent =
+                        "Start Parking";
+
+
+                    startButton.dataset
+                        .ownerBookingAction =
+                        "active";
+
+
+                    startButton.dataset
+                        .bookingId =
+                        booking.id;
+
+
+                    actionCell.appendChild(
+                        startButton
+                    );
+
+                } else if (
+                    bookingStatus ===
+                    "active"
+                ) {
+
+                    const completeButton =
+                        document.createElement(
+                            "button"
+                        );
+
+
+                    completeButton.type =
+                        "button";
+
+
+                    completeButton.className =
+                        "btn-primary";
+
+
+                    completeButton.textContent =
+                        "Complete";
+
+
+                    completeButton.dataset
+                        .ownerBookingAction =
+                        "completed";
+
+
+                    completeButton.dataset
+                        .bookingId =
+                        booking.id;
+
+
+                    actionCell.appendChild(
+                        completeButton
+                    );
+
+                } else {
+
+                    const noAction =
+                        document.createElement(
+                            "span"
+                        );
+
+
+                    noAction.className =
+                        "booking-secondary-text";
+
+
+                    if (
+                        bookingStatus ===
+                            "pending" &&
+                        bookingPaymentStatus !==
+                            "paid"
+                    ) {
+
+                        noAction.textContent =
+                            "Awaiting payment";
+
+                    } else if (
+                        bookingStatus ===
+                        "completed"
+                    ) {
+
+                        noAction.textContent =
+                            "Completed";
+
+                    } else if (
+                        bookingStatus ===
+                        "cancelled"
+                    ) {
+
+                        noAction.textContent =
+                            "Cancelled";
+
+                    } else {
+
+                        noAction.textContent =
+                            "—";
+                    }
+
+
+                    actionCell.appendChild(
+                        noAction
+                    );
+                }
+
+                row.append(
+                    driverCell,
+                    vehicleCell,
+                    bookingCell,
+                    scheduleCell,
+                    bayCell,
+                    amountCell,
+                    statusCell,
+                    paymentCell,
+                    actionCell
+                );
+
+
+                body.appendChild(
+                    row
+                );
+            }
+        );
+    }
+
+
+    function applyOwnerBookingFilters() {
+
+        const searchInput =
+            document.getElementById(
+                "owner-booking-search"
+            );
+
+
+        const search =
+            String(
+                searchInput?.value ||
+                ""
+            )
+            .trim()
+            .toLowerCase();
+
+
+        const filtered =
+            activeOwnerBookings.filter(
+                booking => {
+
+                    const displayStatus =
+                        getOwnerBookingDisplayStatus(
+                            booking
+                        );
+
+
+                    const statusMatches =
+                        activeBookingFilter ===
+                            "all" ||
+                        displayStatus ===
+                            activeBookingFilter;
+
+
+                    if (!statusMatches) {
+                        return false;
+                    }
+
+
+                    if (!search) {
+                        return true;
+                    }
+
+
+                    const searchable =
+                        [
+                            booking.driver_name,
+                            booking.driver_phone,
+                            booking.registration_number,
+                            booking.manufacturer,
+                            booking.model,
+                            booking.color,
+                            booking.vehicle_type,
+                            booking.booking_reference,
+                            booking.reserved_bay_type,
+                        ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+
+
+                    return searchable.includes(
+                        search
+                    );
+                }
+            );
+
+
+        renderOwnerBookings(
+            filtered
+        );
+    }
+
+
+    function updateOwnerDashboardMetrics(
+        bookings
+    ) {
+
+        if (
+            !activeOwnerParkingSpace
+        ) {
+            return;
+        }
+
+
+        const capacity =
+            Number(
+                activeOwnerParkingSpace
+                    .capacity
+            ) || 0;
+
+
+        const now =
+            Date.now();
+
+
+        const activeBookings =
+            bookings.filter(
+                booking => {
+
+                    if (
+                        booking.status ===
+                            "cancelled" ||
+                        booking.status ===
+                            "completed"
+                    ) {
+                        return false;
+                    }
+
+
+                    const start =
+                        new Date(
+                            booking.start_time
+                        ).getTime();
+
+
+                    const end =
+                        new Date(
+                            booking.end_time
+                        ).getTime();
+
+
+                    return (
+                        Number.isFinite(
+                            start
+                        ) &&
+                        Number.isFinite(
+                            end
+                        ) &&
+                        start <= now &&
+                        end > now
+                    );
+                }
+            );
+
+
+        const occupied =
+            activeBookings.length;
+
+
+        const available =
+            Math.max(
+                capacity -
+                occupied,
+                0
+            );
+
+
+        const occupancyRate =
+            capacity > 0
+                ? Math.min(
+                    Math.round(
+                        (
+                            occupied /
+                            capacity
+                        ) *
+                        100
+                    ),
+                    100
+                )
+                : 0;
+
+
+        setText(
+            "stat-available-spots",
+            `${available} / ${capacity}`
+        );
+
+
+        setText(
+            "stat-occupancy-rate",
+            `${occupancyRate}%`
+        );
+
+
+        const progress =
+            document.getElementById(
+                "occupancy-bar-progress"
+            );
+
+
+        if (progress) {
+
+            progress.style.width =
+                `${occupancyRate}%`;
+        }
+
+
+        // ========================================
+        // TODAY'S REAL PAID BOOKING REVENUE
+        // ========================================
+
+        const today =
+            new Date();
+
+
+        const todayYear =
+            today.getFullYear();
+
+        const todayMonth =
+            today.getMonth();
+
+        const todayDate =
+            today.getDate();
+
+
+        const todaysRevenue =
+            bookings.reduce(
+                (
+                    total,
+                    booking
+                ) => {
+
+                    if (
+                        booking.payment_status !==
+                        "paid"
+                    ) {
+                        return total;
+                    }
+
+
+                    const bookingDate =
+                        new Date(
+                            booking.start_time
+                        );
+
+
+                    if (
+                        bookingDate.getFullYear() !==
+                            todayYear ||
+                        bookingDate.getMonth() !==
+                            todayMonth ||
+                        bookingDate.getDate() !==
+                            todayDate
+                    ) {
+                        return total;
+                    }
+
+
+                    return total +
+                        (
+                            Number(
+                                booking.total_amount
+                            ) || 0
+                        );
+                },
+                0
+            );
+
+
+        setText(
+            "stat-today-revenue",
+            formatOwnerCurrency(
+                todaysRevenue
+            )
+        );
+    }
+
+
+    async function loadOwnerBookingsForSpace(
+        parkingSpaceId
+    ) {
+
+        if (!parkingSpaceId) {
+
+            activeOwnerBookings =
+                [];
+
+
+            renderOwnerBookings(
+                []
+            );
+
+
+            updateOwnerDashboardMetrics(
+                []
+            );
+
+
+            return;
+        }
+
+
+        const loading =
+            document.getElementById(
+                "owner-bookings-loading"
+            );
+
+
+        const wrapper =
+            document.getElementById(
+                "owner-bookings-table-wrapper"
+            );
+
+
+        const empty =
+            document.getElementById(
+                "owner-bookings-empty"
+            );
+
+
+        if (loading) {
+            loading.style.display =
+                "";
+        }
+
+
+        if (wrapper) {
+            wrapper.style.display =
+                "none";
+        }
+
+
+        if (empty) {
+            empty.style.display =
+                "none";
+        }
+
+
+        try {
+
+            const result =
+                await ParkSmartAPI
+                    .getOwnerBookings(
+                        parkingSpaceId
+                    );
+
+
+            activeOwnerBookings =
+                Array.isArray(
+                    result.bookings
+                )
+                    ? result.bookings
+                    : [];
+
+
+            applyOwnerBookingFilters();
+
+
+            updateOwnerDashboardMetrics(
+                activeOwnerBookings
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load owner bookings:",
+                error
+            );
+
+
+            activeOwnerBookings =
+                [];
+
+
+            renderOwnerBookings(
+                []
+            );
+
+
+            showToast(
+                error.message ||
+                "Unable to load bookings.",
+                "danger"
+            );
+
+
+        } finally {
+
+            if (loading) {
+                loading.style.display =
+                    "none";
+            }
+        }
+    }
+
+
+    // ============================================
+    // OWNER EARNINGS & PAYMENT HISTORY
+    // ============================================
+
+    function renderOwnerPaymentHistory(
+        transactions
+    ) {
+
+        const body =
+            document.getElementById(
+                "owner-payments-table-body"
+            );
+
+
+        const wrapper =
+            document.getElementById(
+                "owner-payments-table-wrapper"
+            );
+
+
+        const empty =
+            document.getElementById(
+                "owner-payments-empty"
+            );
+
+
+        if (
+            !body ||
+            !wrapper ||
+            !empty
+        ) {
+            return;
+        }
+
+
+        body.innerHTML =
+            "";
+
+
+        if (
+            !Array.isArray(
+                transactions
+            ) ||
+            transactions.length ===
+                0
+        ) {
+
+            wrapper.style.display =
+                "none";
+
+            empty.style.display =
+                "";
+
+            return;
+        }
+
+
+        empty.style.display =
+            "none";
+
+        wrapper.style.display =
+            "";
+
+
+        transactions.forEach(
+            transaction => {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                // ====================================
+                // BOOKING
+                // ====================================
+
+                const bookingCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const bookingRef =
+                    document.createElement(
+                        "strong"
+                    );
+
+
+                bookingRef.textContent =
+                    transaction.booking_reference ||
+                    "—";
+
+
+                const orderId =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                orderId.className =
+                    "booking-secondary-text";
+
+
+                orderId.textContent =
+                    transaction.provider_order_id ||
+                    "No gateway order";
+
+
+                bookingCell.append(
+                    bookingRef,
+                    orderId
+                );
+
+
+                // ====================================
+                // DRIVER
+                // ====================================
+
+                const driverCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const driverName =
+                    document.createElement(
+                        "strong"
+                    );
+
+
+                driverName.textContent =
+                    transaction.driver_name ||
+                    "Driver";
+
+
+                const driverPhone =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                driverPhone.className =
+                    "booking-secondary-text";
+
+
+                driverPhone.textContent =
+                    transaction.driver_phone ||
+                    "Phone unavailable";
+
+
+                driverCell.append(
+                    driverName,
+                    driverPhone
+                );
+
+
+                // ====================================
+                // PARKING
+                // ====================================
+
+                const parkingCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                parkingCell.textContent =
+                    transaction.parking_space_name ||
+                    "—";
+
+
+                // ====================================
+                // AMOUNT
+                // ====================================
+
+                const amountCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                amountCell.textContent =
+                    formatOwnerCurrency(
+                        transaction.amount
+                    );
+
+
+                // ====================================
+                // PAYMENT METHOD
+                // ====================================
+
+                const methodCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const method =
+                    String(
+                        transaction.payment_method ||
+                        "—"
+                    )
+                        .replace(
+                            /_/g,
+                            " "
+                        );
+
+
+                methodCell.textContent =
+                    method === "—"
+                        ? "—"
+                        : method
+                            .charAt(0)
+                            .toUpperCase() +
+                        method.slice(1);
+
+
+                // ====================================
+                // PAID AT
+                // ====================================
+
+                const paidAtCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                paidAtCell.textContent =
+                    transaction.paid_at
+                        ? formatOwnerDateTime(
+                            transaction.paid_at
+                        )
+                        : "Not paid";
+
+
+                // ====================================
+                // STATUS
+                // ====================================
+
+                const statusCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                const paymentStatus =
+                    String(
+                        transaction.status ||
+                        "created"
+                    )
+                        .trim()
+                        .toLowerCase();
+
+
+                statusCell.appendChild(
+                    createBookingBadge(
+                        paymentStatus
+                            .replace(
+                                /_/g,
+                                " "
+                            )
+                            .toUpperCase(),
+
+                        paymentStatus ===
+                            "paid"
+                            ? "paid"
+                            : paymentStatus
+                    )
+                );
+
+
+                row.append(
+                    bookingCell,
+                    driverCell,
+                    parkingCell,
+                    amountCell,
+                    methodCell,
+                    paidAtCell,
+                    statusCell
+                );
+
+
+                body.appendChild(
+                    row
+                );
+            }
+        );
+    }
+
+
+    async function loadOwnerEarningsForSpace(
+        parkingSpaceId
+    ) {
+
+        if (!parkingSpaceId) {
+
+            setText(
+                "owner-today-earnings",
+                formatOwnerCurrency(0)
+            );
+
+            setText(
+                "owner-month-earnings",
+                formatOwnerCurrency(0)
+            );
+
+            setText(
+                "owner-total-paid-revenue",
+                formatOwnerCurrency(0)
+            );
+
+            setText(
+                "owner-payment-count",
+                "0 Paid Transactions"
+            );
+
+            renderOwnerPaymentHistory(
+                []
+            );
+
+            return;
+        }
+
+
+        const loading =
+            document.getElementById(
+                "owner-payments-loading"
+            );
+
+
+        const wrapper =
+            document.getElementById(
+                "owner-payments-table-wrapper"
+            );
+
+
+        const empty =
+            document.getElementById(
+                "owner-payments-empty"
+            );
+
+
+        if (loading) {
+            loading.style.display =
+                "";
+        }
+
+
+        if (wrapper) {
+            wrapper.style.display =
+                "none";
+        }
+
+
+        if (empty) {
+            empty.style.display =
+                "none";
+        }
+
+
+        try {
+
+            const result =
+                await ParkSmartAPI
+                    .getOwnerEarnings(
+                        parkingSpaceId
+                    );
+
+
+            const summary =
+                result.summary ||
+                {};
+
+
+            const transactions =
+                Array.isArray(
+                    result.transactions
+                )
+                    ? result.transactions
+                    : [];
+
+
+            setText(
+                "owner-today-earnings",
+                formatOwnerCurrency(
+                    summary.today_earnings
+                )
+            );
+
+
+            setText(
+                "owner-month-earnings",
+                formatOwnerCurrency(
+                    summary.month_earnings
+                )
+            );
+
+
+            setText(
+                "owner-total-paid-revenue",
+                formatOwnerCurrency(
+                    summary.total_paid_revenue
+                )
+            );
+
+
+            const paidCount =
+                Number(
+                    summary
+                        .paid_transaction_count
+                ) || 0;
+
+
+            setText(
+                "owner-payment-count",
+
+                `${paidCount} Paid ${
+                    paidCount === 1
+                        ? "Transaction"
+                        : "Transactions"
+                }`
+            );
+
+
+            // Keep the dashboard's top revenue
+            // metric consistent with the real
+            // payment ledger.
+
+            setText(
+                "stat-today-revenue",
+                formatOwnerCurrency(
+                    summary.today_earnings
+                )
+            );
+
+
+            renderOwnerPaymentHistory(
+                transactions
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load owner earnings:",
+                error
+            );
+
+
+            renderOwnerPaymentHistory(
+                []
+            );
+
+
+            showToast(
+                error.message ||
+                "Unable to load earnings.",
+                "danger"
+            );
+
+
+        } finally {
+
+            if (loading) {
+                loading.style.display =
+                    "none";
+            }
+        }
+    }
+
+
+    function initOwnerBookingFilters() {
+
+        const searchInput =
+            document.getElementById(
+                "owner-booking-search"
+            );
+
+
+        searchInput?.addEventListener(
+            "input",
+            applyOwnerBookingFilters
+        );
+
+
+        document
+            .querySelectorAll(
+                "[data-booking-filter]"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            document
+                                .querySelectorAll(
+                                    "[data-booking-filter]"
+                                )
+                                .forEach(
+                                    item =>
+                                        item.classList
+                                            .remove(
+                                                "active"
+                                            )
+                                );
+
+
+                            button.classList.add(
+                                "active"
+                            );
+
+
+                            activeBookingFilter =
+                                button.dataset
+                                    .bookingFilter ||
+                                "all";
+
+
+                            applyOwnerBookingFilters();
+                        }
+                    );
+                }
+            );
+    }
+
+function initOwnerBookingActions() {
+
+    const tableBody =
+        document.getElementById(
+            "owner-bookings-table-body"
+        );
+
+
+    if (!tableBody) {
+        return;
+    }
+
+
+    tableBody.addEventListener(
+        "click",
+        async event => {
+
+            const button =
+                event.target.closest(
+                    "[data-owner-booking-action]"
+                );
+
+
+            if (!button) {
+                return;
+            }
+
+
+            const bookingId =
+                button.dataset
+                    .bookingId;
+
+
+            const nextStatus =
+                button.dataset
+                    .ownerBookingAction;
+
+
+            if (
+                !bookingId ||
+                !nextStatus
+            ) {
+                return;
+            }
+
+
+            try {
+
+                button.disabled =
+                    true;
+
+
+                const originalText =
+                    button.textContent;
+
+
+                button.textContent =
+                    nextStatus ===
+                    "active"
+                        ? "Starting..."
+                        : "Completing...";
+
+
+                const result =
+                    await ParkSmartAPI
+                        .updateOwnerBookingStatus(
+                            bookingId,
+                            nextStatus
+                        );
+
+
+                showToast(
+                    result.message ||
+                    "Booking updated.",
+                    "success"
+                );
+
+
+                if (
+                    activeOwnerParkingSpace
+                        ?.id
+                ) {
+
+                    await loadOwnerBookingsForSpace(
+                        activeOwnerParkingSpace.id
+                    );
+                }
+
+
+                button.textContent =
+                    originalText;
+
+
+            } catch (error) {
+
+                button.disabled =
+                    false;
+
+
+                showToast(
+                    error.message ||
+                    "Unable to update booking.",
+                    "danger"
+                );
+            }
+        }
+    );
+}
+
+function renderOwnerParkingSpace(
+    parking
+) {
+
+    if (!parking) {
+        return;
+    }
+
+    activeOwnerParkingSpace =
+        parking;
+
+
+    // ========================================
+    // HEADER
+    // ========================================
+
+    setText(
+        "space-name-heading",
+        parking.name
+    );
+
+    setText(
+        "dashboard-facility-id",
+        `Facility ID: ${parking.id}`
+    );
+
+    setText(
+        "dashboard-space-address",
+        `📍 ${parking.address}`
+    );
+
+    setText(
+        "dashboard-space-type",
+        `${parkingTypeLabel(
+            parking.parking_type
+        )} • ${parkingScheduleLabel(
+            parking.schedule_type
+        )}`
+    );
+
+    // ========================================
+    // STATUS
+    // ========================================
+
+    updateDashboardAvailabilityUI(
+        parking.is_available
+    );
+
+
+    // ========================================
+    // CAPACITY PLACEHOLDER
+    //
+    // Real availability / occupancy / revenue
+    // are calculated after bookings load.
+    // ========================================
+
+    const capacity =
+        Number(
+            parking.capacity
+        ) || 0;
+
+
+    setText(
+        "stat-available-spots",
+        `${capacity} / ${capacity}`
+    );
+
+
+    setText(
+        "stat-occupancy-rate",
+        "0%"
+    );
+
+
+    setText(
+        "stat-today-revenue",
+        formatOwnerCurrency(0)
+    );
+
+
+    const progress =
+        document.getElementById(
+            "occupancy-bar-progress"
+        );
+
+
+    if (progress) {
+        progress.style.width =
+            "0%";
+    }
+
+
+    // ========================================
+    // PRICING
+    // ========================================
+
+    const hourlyRate =
+        Number(
+            parking.price_per_hour
+        ) || 0;
+
+    const slider =
+        document.getElementById(
+            "pricing-slider"
+        );
+
+    const livePrice =
+        document.getElementById(
+            "live-price-val"
+        );
+
+    const basePreset =
+        document.getElementById(
+            "base-price-preset"
+        );
+
+    if (slider) {
+        slider.value =
+            hourlyRate;
+    }
+
+    if (livePrice) {
+        livePrice.textContent =
+            hourlyRate.toFixed(2);
+    }
+
+    if (basePreset) {
+        basePreset.textContent =
+            `Base (₹${hourlyRate.toFixed(0)})`;
+    }
+
+
+    // ========================================
+    // LOCATION DETAILS
+    // ========================================
+
+    setText(
+        "detail-location-address",
+        parking.address || "—"
+    );
+
+    setText(
+        "detail-location-city",
+        [
+            parking.city,
+            parking.postal_code,
+        ]
+        .filter(Boolean)
+        .join(" • ") ||
+        "—"
+    );
+
+    const lat =
+        Number(
+            parking.latitude
+        );
+
+    const lng =
+        Number(
+            parking.longitude
+        );
+
+    setText(
+        "detail-location-coordinates",
+        Number.isFinite(lat) &&
+        Number.isFinite(lng)
+            ? `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+            : "—"
+    );
+
+    setText(
+        "detail-access-gate",
+        parking.access_gate ||
+        "Not specified"
+    );
+
+
+    // ========================================
+    // VEHICLE CAPACITY
+    // ========================================
+
+    setText(
+        "detail-standard-bays",
+        Number(
+            parking.standard_bays
+        ) || 0
+    );
+
+    setText(
+        "detail-compact-bays",
+        Number(
+            parking.compact_bays
+        ) || 0
+    );
+
+    setText(
+        "detail-ev-bays",
+        Number(
+            parking.ev_bays
+        ) || 0
+    );
+
+    setText(
+        "detail-motorcycle-bays",
+        Number(
+            parking.motorcycle_bays
+        ) || 0
+    );
+
+    setText(
+        "detail-scooter-bays",
+        Number(
+            parking.scooter_bays
+        ) || 0
+    );
+}
+
+
+function updateDashboardAvailabilityUI(
+    isAvailable
+) {
+
+    const status =
+        Boolean(
+            isAvailable
+        );
+
+    const beaconContainer =
+        document.getElementById(
+            "status-beacon-container"
+        );
+
+    const beaconText =
+        document.getElementById(
+            "beacon-status-text"
+        );
+
+    const subtext =
+        document.getElementById(
+            "availability-subtext"
+        );
+
+    const button =
+        document.getElementById(
+            "btn-toggle-availability"
+        );
+
+    const metric =
+        document.getElementById(
+            "stat-space-status"
+        );
+
+
+    if (status) {
+
+        if (beaconContainer) {
+            beaconContainer.className =
+                "status-beacon-container open";
+        }
+
+        if (beaconText) {
+            beaconText.textContent =
+                "OPEN • ACCEPTING VEHICLES";
+        }
+
+        if (subtext) {
+            subtext.textContent =
+                "Your parking space is open and available for reservations.";
+        }
+
+        if (button) {
+
+            button.className =
+                "master-toggle-btn btn-turn-off";
+
+            button.innerHTML =
+                "<span>Close Parking Space</span>";
+        }
+
+        if (metric) {
+
+            metric.textContent =
+                "LIVE (OPEN)";
+
+            metric.style.color =
+                "var(--success)";
+        }
+
+    } else {
+
+        if (beaconContainer) {
+            beaconContainer.className =
+                "status-beacon-container closed";
+        }
+
+        if (beaconText) {
+            beaconText.textContent =
+                "CLOSED • RESERVATIONS PAUSED";
+        }
+
+        if (subtext) {
+            subtext.textContent =
+                "This parking space is currently unavailable for new reservations.";
+        }
+
+        if (button) {
+
+            button.className =
+                "master-toggle-btn btn-turn-on";
+
+            button.innerHTML =
+                "<span>Open Parking Space</span>";
+        }
+
+        if (metric) {
+
+            metric.textContent =
+                "CLOSED";
+
+            metric.style.color =
+                "var(--danger)";
+        }
+    }
+}
+
+
+function updateRevenueProjection(
+    rate,
+    capacity
+) {
+
+    // This is explicitly only a projection,
+    // not recorded earnings.
+
+    const estimatedOccupancy =
+        0.50;
+
+    const averageHours =
+        4;
+
+    const daily =
+        rate *
+        capacity *
+        estimatedOccupancy *
+        averageHours;
+
+    const monthly =
+        daily *
+        30;
+
+    setText(
+        "est-daily-val",
+        `₹${Math.round(
+            daily
+        ).toLocaleString(
+            "en-IN"
+        )}`
+    );
+
+    setText(
+        "est-monthly-val",
+        `₹${Math.round(
+            monthly
+        ).toLocaleString(
+            "en-IN"
+        )}`
+    );
+}
+
+
+function updateOperatingHoursRowUI(
+    row
+) {
+
+    if (!row) {
+        return;
+    }
+
+
+    const closedInput =
+        row.querySelector(
+            ".operating-closed"
+        );
+
+
+    const openInput =
+        row.querySelector(
+            ".operating-open"
+        );
+
+
+    const closeInput =
+        row.querySelector(
+            ".operating-close"
+        );
+
+
+    const fullDayInput =
+        row.querySelector(
+            ".operating-24-hours"
+        );
+
+
+    const statusText =
+        row.querySelector(
+            ".day-status-text"
+        );
+
+
+    const isClosed =
+        Boolean(
+            closedInput?.checked
+        );
+
+
+    const is24Hours =
+        Boolean(
+            fullDayInput?.checked
+        );
+
+
+    if (statusText) {
+
+        statusText.textContent =
+            isClosed
+                ? "Closed"
+                : "Open";
+    }
+
+
+    row.classList.toggle(
+        "closed-day",
+        isClosed
+    );
+
+
+    if (fullDayInput) {
+
+        fullDayInput.disabled =
+            isClosed;
+    }
+
+
+    if (openInput) {
+
+        openInput.disabled =
+            isClosed ||
+            is24Hours;
+    }
+
+
+    if (closeInput) {
+
+        closeInput.disabled =
+            isClosed ||
+            is24Hours;
+    }
+}
+
+
+function updateOperatingHoursSummary() {
+
+    const rows =
+        Array.from(
+            document.querySelectorAll(
+                ".operating-hours-row"
+            )
+        );
+
+
+    const summary =
+        document.getElementById(
+            "operating-hours-summary"
+        );
+
+
+    if (
+        !summary ||
+        rows.length === 0
+    ) {
+        return;
+    }
+
+
+    const openRows =
+        rows.filter(
+            row =>
+                !row.querySelector(
+                    ".operating-closed"
+                )?.checked
+        );
+
+
+    const all24 =
+        openRows.length ===
+            7 &&
+        openRows.every(
+            row =>
+                row.querySelector(
+                    ".operating-24-hours"
+                )?.checked
+        );
+
+
+    if (all24) {
+
+        summary.textContent =
+            "Open 24/7";
+
+        return;
+    }
+
+
+    const closedCount =
+        rows.length -
+        openRows.length;
+
+
+    if (
+        closedCount === 0
+    ) {
+
+        summary.textContent =
+            "Open Every Day";
+
+    } else {
+
+        summary.textContent =
+            `${openRows.length} Open • ${closedCount} Closed`;
+    }
+}
+
+
+async function loadOwnerOperatingHours(
+    parkingId
+) {
+
+    if (!parkingId) {
+        return;
+    }
+
+
+    try {
+
+        const result =
+            await ParkSmartAPI
+                .getOwnerOperatingHours(
+                    parkingId
+                );
+
+
+        const hours =
+            Array.isArray(
+                result.operating_hours
+            )
+                ? result.operating_hours
+                : [];
+
+
+        hours.forEach(
+            day => {
+
+                const row =
+                    document.querySelector(
+                        `.operating-hours-row[data-day="${day.day_of_week}"]`
+                    );
+
+
+                if (!row) {
+                    return;
+                }
+
+
+                const openInput =
+                    row.querySelector(
+                        ".operating-open"
+                    );
+
+
+                const closeInput =
+                    row.querySelector(
+                        ".operating-close"
+                    );
+
+
+                const closedInput =
+                    row.querySelector(
+                        ".operating-closed"
+                    );
+
+
+                const fullDayInput =
+                    row.querySelector(
+                        ".operating-24-hours"
+                    );
+
+
+                const isClosed =
+                    Boolean(
+                        day.is_closed
+                    );
+
+
+                const opening =
+                    day.opening_time
+                        ? String(
+                            day.opening_time
+                        ).slice(
+                            0,
+                            5
+                        )
+                        : "";
+
+
+                const closing =
+                    day.closing_time
+                        ? String(
+                            day.closing_time
+                        ).slice(
+                            0,
+                            5
+                        )
+                        : "";
+
+
+                const is24Hours =
+                    !isClosed &&
+                    opening === "00:00" &&
+                    closing === "00:00";
+
+
+                if (closedInput) {
+
+                    closedInput.checked =
+                        isClosed;
+                }
+
+
+                if (fullDayInput) {
+
+                    fullDayInput.checked =
+                        is24Hours;
+                }
+
+
+                if (openInput) {
+
+                    openInput.value =
+                        opening ||
+                        "06:00";
+                }
+
+
+                if (closeInput) {
+
+                    closeInput.value =
+                        closing ||
+                        "22:00";
+                }
+
+
+                updateOperatingHoursRowUI(
+                    row
+                );
+            }
+        );
+
+
+        updateOperatingHoursSummary();
+
+
+    } catch (error) {
+
+        showToast(
+            error.message ||
+            "Unable to load operating hours.",
+            "danger"
+        );
+    }
+}
+
+
+function initOwnerOperatingHours() {
+
+    const list =
+        document.getElementById(
+            "owner-operating-hours-list"
+        );
+
+
+    const saveButton =
+        document.getElementById(
+            "btn-save-operating-hours"
+        );
+
+
+    if (
+        !list ||
+        !saveButton
+    ) {
+        return;
+    }
+
+
+    const rows =
+        () =>
+            Array.from(
+                list.querySelectorAll(
+                    ".operating-hours-row"
+                )
+            );
+
+
+    // ========================================
+    // DAY OPEN / CLOSED
+    // ========================================
+
+    list.addEventListener(
+        "change",
+        event => {
+
+            const row =
+                event.target.closest(
+                    ".operating-hours-row"
+                );
+
+
+            if (!row) {
+                return;
+            }
+
+
+            if (
+                event.target.classList
+                    .contains(
+                        "operating-closed"
+                    )
+            ) {
+
+                updateOperatingHoursRowUI(
+                    row
+                );
+
+
+                updateOperatingHoursSummary();
+
+                return;
+            }
+
+
+            if (
+                event.target.classList
+                    .contains(
+                        "operating-24-hours"
+                    )
+            ) {
+
+                if (
+                    event.target.checked
+                ) {
+
+                    const openInput =
+                        row.querySelector(
+                            ".operating-open"
+                        );
+
+
+                    const closeInput =
+                        row.querySelector(
+                            ".operating-close"
+                        );
+
+
+                    if (openInput) {
+                        openInput.value =
+                            "00:00";
+                    }
+
+
+                    if (closeInput) {
+                        closeInput.value =
+                            "00:00";
+                    }
+                }
+
+
+                updateOperatingHoursRowUI(
+                    row
+                );
+
+
+                updateOperatingHoursSummary();
+            }
+        }
+    );
+
+
+    // ========================================
+    // QUICK ACTION: OPEN 24/7
+    // ========================================
+
+    document
+        .getElementById(
+            "hours-set-24-7"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                rows().forEach(
+                    row => {
+
+                        const closed =
+                            row.querySelector(
+                                ".operating-closed"
+                            );
+
+
+                        const fullDay =
+                            row.querySelector(
+                                ".operating-24-hours"
+                            );
+
+
+                        const open =
+                            row.querySelector(
+                                ".operating-open"
+                            );
+
+
+                        const close =
+                            row.querySelector(
+                                ".operating-close"
+                            );
+
+
+                        if (closed) {
+                            closed.checked =
+                                false;
+                        }
+
+
+                        if (fullDay) {
+                            fullDay.checked =
+                                true;
+                        }
+
+
+                        if (open) {
+                            open.value =
+                                "00:00";
+                        }
+
+
+                        if (close) {
+                            close.value =
+                                "00:00";
+                        }
+
+
+                        updateOperatingHoursRowUI(
+                            row
+                        );
+                    }
+                );
+
+
+                updateOperatingHoursSummary();
+            }
+        );
+
+
+    // ========================================
+    // QUICK ACTION: BUSINESS HOURS
+    // ========================================
+
+    document
+        .getElementById(
+            "hours-business"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                rows().forEach(
+                    row => {
+
+                        const day =
+                            Number(
+                                row.dataset.day
+                            );
+
+
+                        const weekday =
+                            day >= 1 &&
+                            day <= 5;
+
+
+                        const closed =
+                            row.querySelector(
+                                ".operating-closed"
+                            );
+
+
+                        const fullDay =
+                            row.querySelector(
+                                ".operating-24-hours"
+                            );
+
+
+                        const open =
+                            row.querySelector(
+                                ".operating-open"
+                            );
+
+
+                        const close =
+                            row.querySelector(
+                                ".operating-close"
+                            );
+
+
+                        if (closed) {
+                            closed.checked =
+                                !weekday;
+                        }
+
+
+                        if (fullDay) {
+                            fullDay.checked =
+                                false;
+                        }
+
+
+                        if (open) {
+                            open.value =
+                                "06:00";
+                        }
+
+
+                        if (close) {
+                            close.value =
+                                "22:00";
+                        }
+
+
+                        updateOperatingHoursRowUI(
+                            row
+                        );
+                    }
+                );
+
+
+                updateOperatingHoursSummary();
+            }
+        );
+
+
+    // ========================================
+    // QUICK ACTION: CLOSE WEEKENDS
+    // ========================================
+
+    document
+        .getElementById(
+            "hours-close-weekends"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                rows().forEach(
+                    row => {
+
+                        const day =
+                            Number(
+                                row.dataset.day
+                            );
+
+
+                        if (
+                            day !== 0 &&
+                            day !== 6
+                        ) {
+                            return;
+                        }
+
+
+                        const closed =
+                            row.querySelector(
+                                ".operating-closed"
+                            );
+
+
+                        if (closed) {
+
+                            closed.checked =
+                                true;
+                        }
+
+
+                        updateOperatingHoursRowUI(
+                            row
+                        );
+                    }
+                );
+
+
+                updateOperatingHoursSummary();
+            }
+        );
+
+
+    // ========================================
+    // QUICK ACTION: COPY MONDAY
+    // ========================================
+
+    document
+        .getElementById(
+            "hours-copy-monday"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                const monday =
+                    list.querySelector(
+                        '.operating-hours-row[data-day="1"]'
+                    );
+
+
+                if (!monday) {
+                    return;
+                }
+
+
+                const mondayClosed =
+                    monday.querySelector(
+                        ".operating-closed"
+                    )?.checked ||
+                    false;
+
+
+                const monday24 =
+                    monday.querySelector(
+                        ".operating-24-hours"
+                    )?.checked ||
+                    false;
+
+
+                const mondayOpen =
+                    monday.querySelector(
+                        ".operating-open"
+                    )?.value ||
+                    "06:00";
+
+
+                const mondayClose =
+                    monday.querySelector(
+                        ".operating-close"
+                    )?.value ||
+                    "22:00";
+
+
+                rows().forEach(
+                    row => {
+
+                        const day =
+                            Number(
+                                row.dataset.day
+                            );
+
+
+                        if (
+                            day < 1 ||
+                            day > 5
+                        ) {
+                            return;
+                        }
+
+
+                        const closed =
+                            row.querySelector(
+                                ".operating-closed"
+                            );
+
+
+                        const fullDay =
+                            row.querySelector(
+                                ".operating-24-hours"
+                            );
+
+
+                        const open =
+                            row.querySelector(
+                                ".operating-open"
+                            );
+
+
+                        const close =
+                            row.querySelector(
+                                ".operating-close"
+                            );
+
+
+                        if (closed) {
+                            closed.checked =
+                                mondayClosed;
+                        }
+
+
+                        if (fullDay) {
+                            fullDay.checked =
+                                monday24;
+                        }
+
+
+                        if (open) {
+                            open.value =
+                                mondayOpen;
+                        }
+
+
+                        if (close) {
+                            close.value =
+                                mondayClose;
+                        }
+
+
+                        updateOperatingHoursRowUI(
+                            row
+                        );
+                    }
+                );
+
+
+                updateOperatingHoursSummary();
+            }
+        );
+
+
+    // ========================================
+    // SAVE REAL HOURS
+    // ========================================
+
+    saveButton.addEventListener(
+        "click",
+        async () => {
+
+            if (
+                !activeOwnerParkingSpace
+            ) {
+
+                showToast(
+                    "No parking space is selected.",
+                    "danger"
+                );
+
+                return;
+            }
+
+
+            const operatingHours =
+                rows().map(
+                    row => {
+
+                        const isClosed =
+                            row.querySelector(
+                                ".operating-closed"
+                            )?.checked ||
+                            false;
+
+
+                        const is24Hours =
+                            row.querySelector(
+                                ".operating-24-hours"
+                            )?.checked ||
+                            false;
+
+
+                        let openingTime =
+                            row.querySelector(
+                                ".operating-open"
+                            )?.value ||
+                            null;
+
+
+                        let closingTime =
+                            row.querySelector(
+                                ".operating-close"
+                            )?.value ||
+                            null;
+
+
+                        if (
+                            is24Hours &&
+                            !isClosed
+                        ) {
+
+                            openingTime =
+                                "00:00";
+
+                            closingTime =
+                                "00:00";
+                        }
+
+
+                        return {
+
+                            day_of_week:
+                                Number(
+                                    row.dataset.day
+                                ),
+
+                            opening_time:
+                                isClosed
+                                    ? null
+                                    : openingTime,
+
+                            closing_time:
+                                isClosed
+                                    ? null
+                                    : closingTime,
+
+                            is_closed:
+                                isClosed,
+                        };
+                    }
+                );
+
+
+            const invalidDay =
+                operatingHours.find(
+                    day =>
+                        !day.is_closed &&
+                        (
+                            !day.opening_time ||
+                            !day.closing_time
+                        )
+                );
+
+
+            if (invalidDay) {
+
+                showToast(
+                    "Every open day must have opening and closing times.",
+                    "danger"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                saveButton.disabled =
+                    true;
+
+
+                saveButton.textContent =
+                    "Saving Schedule...";
+
+
+                const result =
+                    await ParkSmartAPI
+                        .updateOwnerOperatingHours(
+                            activeOwnerParkingSpace.id,
+                            operatingHours
+                        );
+
+
+                showToast(
+                    result.message ||
+                    "Operating hours updated.",
+                    "success"
+                );
+
+
+                await loadOwnerOperatingHours(
+                    activeOwnerParkingSpace.id
+                );
+
+
+            } catch (error) {
+
+                showToast(
+                    error.message ||
+                    "Unable to save operating hours.",
+                    "danger"
+                );
+
+
+            } finally {
+
+                saveButton.disabled =
+                    false;
+
+
+                saveButton.textContent =
+                    "Save Operating Hours";
+            }
+        }
+    );
+}
+
+
+async function loadOwnerParkingImages(
+    parkingId
+) {
+
+    const grid =
+        document.getElementById(
+            "owner-parking-images-grid"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "owner-parking-images-empty"
+        );
+
+
+    const count =
+        document.getElementById(
+            "owner-parking-image-count"
+        );
+
+
+    if (
+        !parkingId ||
+        !grid
+    ) {
+        return;
+    }
+
+
+    try {
+
+        const result =
+            await ParkSmartAPI
+                .getOwnerParkingImages(
+                    parkingId
+                );
+
+
+        const images =
+            Array.isArray(
+                result.images
+            )
+                ? result.images
+                : [];
+
+
+        grid.innerHTML =
+            "";
+
+
+        if (count) {
+
+            count.textContent =
+                `${images.length} ${
+                    images.length === 1
+                        ? "Image"
+                        : "Images"
+                }`;
+        }
+
+
+        if (
+            images.length === 0
+        ) {
+
+            if (empty) {
+                empty.style.display =
+                    "";
+            }
+
+            return;
+        }
+
+
+        if (empty) {
+            empty.style.display =
+                "none";
+        }
+
+
+        images.forEach(
+            image => {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                item.className =
+                    "photo-preview-item";
+
+
+                item.style.position =
+                    "relative";
+
+
+                const img =
+                    document.createElement(
+                        "img"
+                    );
+
+
+                img.src =
+                    image.image_url;
+
+
+                img.alt =
+                    "Parking facility";
+
+
+                const controls =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                controls.style.cssText =
+                    `
+                    display:flex;
+                    gap:8px;
+                    margin-top:8px;
+                    flex-wrap:wrap;
+                    `;
+
+
+                if (
+                    image.is_primary
+                ) {
+
+                    const primary =
+                        document.createElement(
+                            "span"
+                        );
+
+
+                    primary.className =
+                        "space-select-pill";
+
+
+                    primary.textContent =
+                        "Primary";
+
+
+                    controls.appendChild(
+                        primary
+                    );
+
+                } else {
+
+                    const primaryButton =
+                        document.createElement(
+                            "button"
+                        );
+
+
+                    primaryButton.type =
+                        "button";
+
+
+                    primaryButton.className =
+                        "btn-secondary";
+
+
+                    primaryButton.textContent =
+                        "Set Primary";
+
+
+                    primaryButton.addEventListener(
+                        "click",
+                        async () => {
+
+                            try {
+
+                                await ParkSmartAPI
+                                    .setPrimaryParkingImage(
+                                        parkingId,
+                                        image.id
+                                    );
+
+
+                                showToast(
+                                    "Primary parking image updated.",
+                                    "success"
+                                );
+
+
+                                await loadOwnerParkingImages(
+                                    parkingId
+                                );
+
+
+                            } catch (error) {
+
+                                showToast(
+                                    error.message ||
+                                    "Unable to set primary image.",
+                                    "danger"
+                                );
+                            }
+                        }
+                    );
+
+
+                    controls.appendChild(
+                        primaryButton
+                    );
+                }
+
+
+                const deleteButton =
+                    document.createElement(
+                        "button"
+                    );
+
+
+                deleteButton.type =
+                    "button";
+
+
+                deleteButton.className =
+                    "btn-secondary";
+
+
+                deleteButton.textContent =
+                    "Delete";
+
+
+                deleteButton.addEventListener(
+                    "click",
+                    async () => {
+
+                        const confirmed =
+                            window.confirm(
+                                "Delete this parking image?"
+                            );
+
+
+                        if (!confirmed) {
+                            return;
+                        }
+
+
+                        try {
+
+                            const result =
+                                await ParkSmartAPI
+                                    .deleteOwnerParkingImage(
+                                        parkingId,
+                                        image.id
+                                    );
+
+
+                            showToast(
+                                result.message ||
+                                "Parking image deleted.",
+                                "success"
+                            );
+
+
+                            await loadOwnerParkingImages(
+                                parkingId
+                            );
+
+
+                        } catch (error) {
+
+                            showToast(
+                                error.message ||
+                                "Unable to delete parking image.",
+                                "danger"
+                            );
+                        }
+                    }
+                );
+
+
+                controls.appendChild(
+                    deleteButton
+                );
+
+
+                item.append(
+                    img,
+                    controls
+                );
+
+
+                grid.appendChild(
+                    item
+                );
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Unable to load parking images:",
+            error
+        );
+
+
+        showToast(
+            error.message ||
+            "Unable to load parking images.",
+            "danger"
+        );
+    }
+}
+
+
+function initOwnerParkingImages() {
+
+    const input =
+        document.getElementById(
+            "dashboard-parking-image-input"
+        );
+
+
+    const button =
+        document.getElementById(
+            "btn-upload-parking-images"
+        );
+
+
+    if (
+        !input ||
+        !button
+    ) {
+        return;
+    }
+
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            input.click();
+        }
+    );
+
+
+    input.addEventListener(
+        "change",
+        async () => {
+
+            const files =
+                Array.from(
+                    input.files || []
+                );
+
+
+            if (
+                files.length === 0 ||
+                !activeOwnerParkingSpace
+            ) {
+                return;
+            }
+
+
+            try {
+
+                button.disabled =
+                    true;
+
+
+                button.textContent =
+                    "Uploading...";
+
+
+                const result =
+                    await ParkSmartAPI
+                        .uploadOwnerParkingImages(
+                            activeOwnerParkingSpace.id,
+                            files
+                        );
+
+
+                showToast(
+                    result.message ||
+                    "Parking images uploaded.",
+                    "success"
+                );
+
+
+                input.value =
+                    "";
+
+
+                await loadOwnerParkingImages(
+                    activeOwnerParkingSpace.id
+                );
+
+
+            } catch (error) {
+
+                showToast(
+                    error.message ||
+                    "Unable to upload parking images.",
+                    "danger"
+                );
+
+
+            } finally {
+
+                button.disabled =
+                    false;
+
+
+                button.textContent =
+                    "＋ Add Parking Images";
+            }
+        }
+    );
+}
+
+
+async function initOwnerDashboard() {
+
+    const isDashboard =
+        document.querySelector(
+            ".owner-dashboard-root"
+        );
+
+    if (!isDashboard) {
+        return;
+    }
+
+
+    const selector =
+        document.getElementById(
+            "dashboard-space-selector"
+        );
+
+
+    try {
+
+        const result =
+            await ParkSmartAPI
+                .getOwnerParkingSpaces();
+
+        ownerParkingSpaces =
+            result.parking_spaces ||
+            result.spaces ||
+            [];
+
+
+        if (
+            ownerParkingSpaces.length ===
+            0
+        ) {
+
+            setText(
+                "space-name-heading",
+                "No parking spaces listed yet"
+            );
+
+            if (selector) {
+
+                selector.innerHTML = `
+                    <option value="">
+                        No parking spaces
+                    </option>
+                `;
+
+                selector.disabled =
+                    true;
+            }
+
+            return;
+        }
+
+
+        // ====================================
+        // SPACE SELECTOR
+        // ====================================
+
+        if (selector) {
+
+            selector.innerHTML =
+                "";
+
+            ownerParkingSpaces
+                .forEach(
+                    parking => {
+
+                        const option =
+                            document
+                                .createElement(
+                                    "option"
+                                );
+
+                        option.value =
+                            parking.id;
+
+                        option.textContent =
+                            parking.name;
+
+                        selector.appendChild(
+                            option
+                        );
+                    }
+                );
+        }
+
+
+        // URL:
+        // owner-dashboard.html?space=<uuid>
+
+        const query =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        const requestedId =
+            query.get(
+                "space"
+            );
+
+        let selected =
+            ownerParkingSpaces
+                .find(
+                    parking =>
+                        parking.id ===
+                        requestedId
+                );
+
+        if (!selected) {
+            selected =
+                ownerParkingSpaces[0];
+        }
+
+
+        if (selector) {
+            selector.value =
+                selected.id;
+        }
+
+
+        renderOwnerParkingSpace(
+            selected
+        );
+
+
+        await loadOwnerBookingsForSpace(
+            selected.id
+        );
+
+
+        await loadOwnerOperatingHours(
+            selected.id
+        );
+
+
+        await loadOwnerParkingImages(
+            selected.id
+        );
+
+
+        await loadOwnerParkingImages(
+            selected.id
+        );
+
+
+        // ====================================
+        // CHANGE ACTIVE SPACE
+        // ====================================
+
+        selector?.addEventListener(
+            "change",
+            async event => {
+
+                const parking =
+                    ownerParkingSpaces
+                        .find(
+                            item =>
+                                item.id ===
+                                event.target.value
+                        );
+
+                if (!parking) {
+                    return;
+                }
+
+                renderOwnerParkingSpace(
+                    parking
+                );
+
+                await loadOwnerBookingsForSpace(
+                    parking.id
+                );
+
+
+                await loadOwnerOperatingHours(
+                    parking.id
+                );
+
+
+                await loadOwnerOperatingHours(
+                    parking.id
+                );
+
+
+                await loadOwnerParkingImages(
+                    parking.id
+                );
+
+
+                const url =
+                    new URL(
+                        window.location.href
+                    );
+
+                url.searchParams.set(
+                    "space",
+                    parking.id
+                );
+
+                window.history
+                    .replaceState(
+                        {},
+                        "",
+                        url
+                    );
+            }
+        );
+
+
+        // ====================================
+        // AVAILABILITY
+        // ====================================
+
+        const availabilityButton =
+            document.getElementById(
+                "btn-toggle-availability"
+            );
+
+        availabilityButton
+            ?.addEventListener(
+                "click",
+                async () => {
+
+                    if (
+                        !activeOwnerParkingSpace
+                    ) {
+                        return;
+                    }
+
+                    const nextState =
+                        !activeOwnerParkingSpace
+                            .is_available;
+
+                    try {
+
+                        const updated =
+                            await ParkSmartAPI
+                                .updateParkingAvailability(
+                                    activeOwnerParkingSpace
+                                        .id,
+                                    nextState
+                                );
+
+                        const parking =
+                            updated.parking_space;
+
+                        Object.assign(
+                            activeOwnerParkingSpace,
+                            parking
+                        );
+
+                        updateDashboardAvailabilityUI(
+                            activeOwnerParkingSpace
+                                .is_available
+                        );
+
+                        showToast(
+                            updated.message ||
+                            "Availability updated.",
+                            "success"
+                        );
+
+                    } catch (error) {
+
+                        showToast(
+                            error.message ||
+                            "Unable to update availability.",
+                            "danger"
+                        );
+                    }
+                }
+            );
+
+
+        // ====================================
+        // PRICING
+        // ====================================
+
+        const slider =
+            document.getElementById(
+                "pricing-slider"
+            );
+
+        const livePrice =
+            document.getElementById(
+                "live-price-val"
+            );
+
+        const saveButton =
+            document.getElementById(
+                "btn-save-rates"
+            );
+
+
+        function syncPricingSliderDisplay() {
+
+            if (!slider) {
+                return;
+            }
+
+
+            const value =
+                Number(
+                    slider.value
+                );
+
+
+            if (
+                !Number.isFinite(value)
+            ) {
+                return;
+            }
+
+
+            if (livePrice) {
+
+                livePrice.textContent =
+                    value.toFixed(2);
+            }
+        }
+
+
+        slider?.addEventListener(
+            "input",
+            syncPricingSliderDisplay
+        );
+
+
+        slider?.addEventListener(
+            "change",
+            syncPricingSliderDisplay
+        );
+
+
+        document
+            .querySelectorAll(
+                ".surge-preset-pill"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            if (
+                                !activeOwnerParkingSpace ||
+                                !slider
+                            ) {
+                                return;
+                            }
+
+                            document
+                                .querySelectorAll(
+                                    ".surge-preset-pill"
+                                )
+                                .forEach(
+                                    item =>
+                                        item.classList
+                                            .remove(
+                                                "active"
+                                            )
+                                );
+
+                            button.classList.add(
+                                "active"
+                            );
+
+                            const base =
+                                Number(
+                                    activeOwnerParkingSpace
+                                        .price_per_hour
+                                ) || 0;
+
+                            const multiplier =
+                                Number(
+                                    button.dataset
+                                        .multiplier
+                                ) || 1;
+
+                            const newPrice =
+                                Math.round(
+                                    base *
+                                    multiplier
+                                );
+
+                            slider.value =
+                                newPrice;
+
+                            if (livePrice) {
+                                livePrice.textContent =
+                                    newPrice
+                                        .toFixed(2);
+                            }
+                        }
+                    );
+                }
+            );
+
+
+        saveButton?.addEventListener(
+            "click",
+            async () => {
+
+                if (
+                    !activeOwnerParkingSpace
+                ) {
+                    return;
+                }
+
+                const newPrice =
+                    Number(
+                        slider.value
+                    );
+
+                try {
+
+                    const result =
+                        await ParkSmartAPI
+                            .updateParkingPricing(
+                                activeOwnerParkingSpace
+                                    .id,
+                                {
+                                    price_per_hour:
+                                        newPrice,
+
+                                    daily_max:
+                                        activeOwnerParkingSpace
+                                            .daily_max,
+                                }
+                            );
+
+                    Object.assign(
+                        activeOwnerParkingSpace,
+                        result.parking_space
+                    );
+
+                    renderOwnerParkingSpace(
+                        activeOwnerParkingSpace
+                    );
+
+                    showToast(
+                        result.message ||
+                        "Pricing updated.",
+                        "success"
+                    );
+
+                } catch (error) {
+
+                    showToast(
+                        error.message ||
+                        "Unable to update pricing.",
+                        "danger"
+                    );
                 }
             }
-        });
-    }
+        );
 
-    if (btnSaveLocation) {
-        btnSaveLocation.addEventListener('click', () => {
-            store.save();
-            showToast(`Parking entrance coordinates saved (${currentLat}, ${currentLng})!`, "success");
-        });
-    }
-}
+    } catch (error) {
 
-function initSpotDetailsModal() {
-    const btnOpenModal = document.getElementById('btn-open-edit-modal');
-    const modalBackdrop = document.getElementById('edit-spot-modal');
-    const btnCloseModal = document.getElementById('btn-close-edit-modal');
-    const formEdit = document.getElementById('edit-spot-form');
+        console.error(
+            "Unable to load owner parking spaces:",
+            error
+        );
 
-    if (!modalBackdrop) return;
-
-    if (btnOpenModal) {
-        btnOpenModal.addEventListener('click', () => {
-            document.getElementById('edit-name').value = store.data.space.name || "";
-            document.getElementById('edit-capacity').value = store.data.space.capacity || 25;
-            document.getElementById('edit-rate').value = store.data.space.hourlyRate || 4.50;
-            document.getElementById('edit-address').value = store.data.space.address || "";
-            modalBackdrop.classList.add('active');
-        });
-    }
-
-    if (btnCloseModal) {
-        btnCloseModal.addEventListener('click', () => {
-            modalBackdrop.classList.remove('active');
-        });
-    }
-
-    modalBackdrop.addEventListener('click', (e) => {
-        if (e.target === modalBackdrop) {
-            modalBackdrop.classList.remove('active');
-        }
-    });
-
-    if (formEdit) {
-        formEdit.addEventListener('submit', (e) => {
-            e.preventDefault();
-            store.data.space.name = document.getElementById('edit-name').value.trim();
-            store.data.space.capacity = parseInt(document.getElementById('edit-capacity').value) || 25;
-            store.data.space.hourlyRate = parseFloat(document.getElementById('edit-rate').value) || 4.50;
-            store.data.space.address = document.getElementById('edit-address').value.trim();
-            store.save();
-
-            modalBackdrop.classList.remove('active');
-            showToast("Space details updated successfully!", "success");
-
-            const headingEl = document.getElementById('space-name-heading');
-            if (headingEl) headingEl.textContent = store.data.space.name;
-            updateOccupancyDisplay();
-        });
+        showToast(
+            error.message ||
+            "Unable to load your parking spaces.",
+            "danger"
+        );
     }
 }
 
-// Navbar Mobile Hamburger
+// ============================================
+// 15. MOBILE NAVIGATION
+// ============================================
+
 function initNav() {
-    const hamburger = document.getElementById('hamburger');
-    const navLinks = document.getElementById('nav-links');
-    if (hamburger && navLinks) {
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navLinks.classList.toggle('active');
-        });
 
-        navLinks.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                hamburger.classList.remove('active');
-                navLinks.classList.remove('active');
-            });
-        });
+    const hamburger =
+        document.getElementById(
+            'hamburger'
+        );
+
+    const navLinks =
+        document.getElementById(
+            'nav-links'
+        );
+
+    if (
+        hamburger &&
+        navLinks
+    ) {
+
+        hamburger.addEventListener(
+            'click',
+            () => {
+
+                hamburger.classList.toggle(
+                    'active'
+                );
+
+                navLinks.classList.toggle(
+                    'active'
+                );
+            }
+        );
+
+        navLinks
+            .querySelectorAll(
+                '.nav-link'
+            )
+            .forEach(
+                link => {
+
+                    link.addEventListener(
+                        'click',
+                        () => {
+
+                            hamburger.classList.remove(
+                                'active'
+                            );
+
+                            navLinks.classList.remove(
+                                'active'
+                            );
+                        }
+                    );
+                }
+            );
     }
 }
 
-// Global DOM Ready Initialization
-document.addEventListener('DOMContentLoaded', () => {
-    initNav();
-    syncAuthGuardUI();
-    initOwnerAuth();
-    initPlacesAddressAutocomplete();
-    initApplyForm();
-    initOwnerDashboard();
-});
+// ============================================
+// 16. GLOBAL INITIALIZATION
+// ============================================
+
+function initOwnerTheme() {
+
+    const root =
+        document.documentElement;
+
+
+    const themeButtons = [
+        document.getElementById(
+            "menu-theme-toggle"
+        ),
+
+        document.getElementById(
+            "dock-theme-toggle"
+        ),
+    ]
+    .filter(Boolean);
+
+
+    const savedTheme =
+        localStorage.getItem(
+            "parksmart_theme"
+        );
+
+
+    const prefersDark =
+        window.matchMedia?.(
+            "(prefers-color-scheme: dark)"
+        ).matches;
+
+
+    const initialTheme =
+        savedTheme ||
+        (
+            prefersDark
+                ? "dark"
+                : "light"
+        );
+
+
+    function applyTheme(theme) {
+
+        root.dataset.theme =
+            theme;
+
+
+        localStorage.setItem(
+            "parksmart_theme",
+            theme
+        );
+
+
+        themeButtons.forEach(
+            button => {
+
+                button.textContent =
+                    theme === "dark"
+                        ? "☀️ Light Mode"
+                        : "🌙 Dark Mode";
+            }
+        );
+    }
+
+
+    applyTheme(
+        initialTheme
+    );
+
+
+    themeButtons.forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const nextTheme =
+                        root.dataset.theme ===
+                        "dark"
+                            ? "light"
+                            : "dark";
+
+
+                    applyTheme(
+                        nextTheme
+                    );
+                }
+            );
+        }
+    );
+}
+
+function initEditParkingSpace() {
+
+    const openButton =
+        document.getElementById(
+            "menu-edit-space"
+        );
+
+
+    const overlay =
+        document.getElementById(
+            "edit-space-overlay"
+        );
+
+
+    const closeButton =
+        document.getElementById(
+            "edit-space-close"
+        );
+
+
+    const cancelButton =
+        document.getElementById(
+            "edit-space-cancel"
+        );
+
+
+    const form =
+        document.getElementById(
+            "edit-space-form"
+        );
+
+
+    const saveButton =
+        document.getElementById(
+            "edit-space-save"
+        );
+
+
+    if (
+        !openButton ||
+        !overlay ||
+        !form
+    ) {
+        return;
+    }
+
+
+    function closeEditor() {
+
+        overlay.style.display =
+            "none";
+
+
+        document.body.style.overflow =
+            "";
+    }
+
+
+    function openEditor() {
+
+        if (
+            !activeOwnerParkingSpace
+        ) {
+
+            showToast(
+                "No parking space is currently selected.",
+                "danger"
+            );
+
+            return;
+        }
+
+
+        const parking =
+            activeOwnerParkingSpace;
+
+
+        document.getElementById(
+            "edit-space-name"
+        ).value =
+            parking.name || "";
+
+
+        document.getElementById(
+            "edit-space-type"
+        ).value =
+            parking.parking_type ||
+            "covered";
+
+
+        document.getElementById(
+            "edit-space-address"
+        ).value =
+            parking.address || "";
+
+
+        document.getElementById(
+            "edit-space-city"
+        ).value =
+            parking.city || "";
+
+
+        document.getElementById(
+            "edit-space-postal-code"
+        ).value =
+            parking.postal_code || "";
+
+
+        document.getElementById(
+            "edit-space-access-gate"
+        ).value =
+            parking.access_gate || "";
+
+
+        document.getElementById(
+            "edit-space-schedule"
+        ).value =
+            parking.schedule_type ||
+            "24-7";
+
+
+        document.getElementById(
+            "edit-space-latitude"
+        ).value =
+            parking.latitude ?? "";
+
+
+        document.getElementById(
+            "edit-space-longitude"
+        ).value =
+            parking.longitude ?? "";
+
+
+        document.getElementById(
+            "edit-space-capacity"
+        ).value =
+            Number(
+                parking.capacity
+            ) || 0;
+
+
+        document.getElementById(
+            "edit-standard-bays"
+        ).value =
+            Number(
+                parking.standard_bays
+            ) || 0;
+
+
+        document.getElementById(
+            "edit-ev-bays"
+        ).value =
+            Number(
+                parking.ev_bays
+            ) || 0;
+
+
+        document.getElementById(
+            "edit-motorcycle-bays"
+        ).value =
+            Number(
+                parking.motorcycle_bays
+            ) || 0;
+
+
+        document.getElementById(
+            "edit-scooter-bays"
+        ).value =
+            Number(
+                parking.scooter_bays
+            ) || 0;
+
+
+        document.getElementById(
+            "edit-space-rate"
+        ).value =
+            Number(
+                parking.price_per_hour
+            ) || 0;
+
+
+        document.getElementById(
+            "edit-space-daily-max"
+        ).value =
+            parking.daily_max ??
+            "";
+
+
+        overlay.style.display =
+            "block";
+
+
+        document.body.style.overflow =
+            "hidden";
+    }
+
+
+    openButton.addEventListener(
+        "click",
+        () => {
+
+            openEditor();
+
+
+            document
+                .getElementById(
+                    "dashboard-more-menu"
+                )
+                ?.classList
+                .remove(
+                    "active"
+                );
+        }
+    );
+
+
+    closeButton?.addEventListener(
+        "click",
+        closeEditor
+    );
+
+
+    cancelButton?.addEventListener(
+        "click",
+        closeEditor
+    );
+
+
+    overlay.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === overlay
+            ) {
+                closeEditor();
+            }
+        }
+    );
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            if (
+                !activeOwnerParkingSpace
+            ) {
+                return;
+            }
+
+
+            const payload = {
+
+                name:
+                    document
+                        .getElementById(
+                            "edit-space-name"
+                        )
+                        .value
+                        .trim(),
+
+                parking_type:
+                    document
+                        .getElementById(
+                            "edit-space-type"
+                        )
+                        .value,
+
+                address:
+                    document
+                        .getElementById(
+                            "edit-space-address"
+                        )
+                        .value
+                        .trim(),
+
+                city:
+                    document
+                        .getElementById(
+                            "edit-space-city"
+                        )
+                        .value
+                        .trim(),
+
+                postal_code:
+                    document
+                        .getElementById(
+                            "edit-space-postal-code"
+                        )
+                        .value
+                        .trim(),
+
+                access_gate:
+                    document
+                        .getElementById(
+                            "edit-space-access-gate"
+                        )
+                        .value
+                        .trim(),
+
+                schedule_type:
+                    document
+                        .getElementById(
+                            "edit-space-schedule"
+                        )
+                        .value,
+
+                latitude:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-space-latitude"
+                            )
+                            .value
+                    ),
+
+                longitude:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-space-longitude"
+                            )
+                            .value
+                    ),
+
+                capacity:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-space-capacity"
+                            )
+                            .value
+                    ),
+
+                standard_bays:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-standard-bays"
+                            )
+                            .value
+                    ),
+
+                ev_bays:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-ev-bays"
+                            )
+                            .value
+                    ),
+
+                motorcycle_bays:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-motorcycle-bays"
+                            )
+                            .value
+                    ),
+
+                scooter_bays:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-scooter-bays"
+                            )
+                            .value
+                    ),
+
+                price_per_hour:
+                    Number(
+                        document
+                            .getElementById(
+                                "edit-space-rate"
+                            )
+                            .value
+                    ),
+
+                daily_max:
+                    document
+                        .getElementById(
+                            "edit-space-daily-max"
+                        )
+                        .value === ""
+                            ? null
+                            : Number(
+                                document
+                                    .getElementById(
+                                        "edit-space-daily-max"
+                                    )
+                                    .value
+                            ),
+            };
+
+
+            if (
+                !payload.name ||
+                !payload.address
+            ) {
+
+                showToast(
+                    "Parking name and address are required.",
+                    "danger"
+                );
+
+                return;
+            }
+
+
+            const compactBays =
+                Number(
+                    activeOwnerParkingSpace
+                        .compact_bays
+                ) || 0;
+
+
+            const assignedBays =
+                payload.standard_bays +
+                compactBays +
+                payload.ev_bays +
+                payload.motorcycle_bays +
+                payload.scooter_bays;
+
+
+            if (
+                assignedBays >
+                payload.capacity
+            ) {
+
+                showToast(
+                    "Assigned bays cannot exceed total parking capacity.",
+                    "danger"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                if (saveButton) {
+
+                    saveButton.disabled =
+                        true;
+
+                    saveButton.textContent =
+                        "Saving...";
+                }
+
+
+                const result =
+                    await ParkSmartAPI
+                        .updateParkingSpaceDetails(
+                            activeOwnerParkingSpace
+                                .id,
+                            payload
+                        );
+
+
+                const updated =
+                    result.parking_space;
+
+
+                Object.assign(
+                    activeOwnerParkingSpace,
+                    updated
+                );
+
+
+                const storedParking =
+                    ownerParkingSpaces.find(
+                        parking =>
+                            parking.id ===
+                            updated.id
+                    );
+
+
+                if (storedParking) {
+
+                    Object.assign(
+                        storedParking,
+                        updated
+                    );
+                }
+
+
+                const selector =
+                    document.getElementById(
+                        "dashboard-space-selector"
+                    );
+
+
+                if (selector) {
+
+                    const option =
+                        Array
+                            .from(
+                                selector.options
+                            )
+                            .find(
+                                item =>
+                                    item.value ===
+                                    updated.id
+                            );
+
+
+                    if (option) {
+                        option.textContent =
+                            updated.name;
+                    }
+                }
+
+
+                renderOwnerParkingSpace(
+                    activeOwnerParkingSpace
+                );
+
+
+                await loadOwnerBookingsForSpace(
+                    activeOwnerParkingSpace
+                        .id
+                );
+
+
+                closeEditor();
+
+
+                showToast(
+                    result.message ||
+                    "Parking space updated successfully.",
+                    "success"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Parking space update failed:",
+                    error
+                );
+
+
+                showToast(
+                    error.message ||
+                    "Unable to update parking space.",
+                    "danger"
+                );
+
+
+            } finally {
+
+                if (saveButton) {
+
+                    saveButton.disabled =
+                        false;
+
+                    saveButton.textContent =
+                        "Save Changes";
+                }
+            }
+        }
+    );
+}
+
+function initDashboardMenu() {
+
+    const button =
+        document.getElementById(
+            "dashboard-more-btn"
+        );
+
+    const menu =
+        document.getElementById(
+            "dashboard-more-menu"
+        );
+
+
+    if (!button || !menu) {
+        return;
+    }
+
+
+    button.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+
+            const isOpen =
+                menu.classList.toggle(
+                    "active"
+                );
+
+
+            button.setAttribute(
+                "aria-expanded",
+                String(isOpen)
+            );
+        }
+    );
+
+
+    menu.addEventListener(
+        "click",
+        event => {
+            event.stopPropagation();
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        () => {
+
+            menu.classList.remove(
+                "active"
+            );
+
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+        }
+    );
+}
+
+function initOwnerProfile() {
+
+    const overlay =
+        document.getElementById(
+            "owner-profile-overlay"
+        );
+
+
+    const form =
+        document.getElementById(
+            "owner-profile-form"
+        );
+
+
+    const closeButton =
+        document.getElementById(
+            "owner-profile-close"
+        );
+
+
+    const cancelButton =
+        document.getElementById(
+            "owner-profile-cancel"
+        );
+
+
+    const saveButton =
+        document.getElementById(
+            "owner-profile-save"
+        );
+
+
+    const openButtons = [
+        document.getElementById(
+            "dock-profile"
+        ),
+        document.getElementById(
+            "dock-account-settings"
+        ),
+        document.getElementById(
+            "menu-owner-settings"
+        ),
+    ].filter(Boolean);
+
+
+    if (
+        !overlay ||
+        !form
+    ) {
+        return;
+    }
+
+
+    function closeProfile() {
+
+        overlay.style.display =
+            "none";
+
+
+        document.body.style.overflow =
+            "";
+    }
+
+
+    async function openProfile() {
+
+        try {
+
+            const result =
+                await ParkSmartAPI
+                    .getCurrentUser();
+
+
+            const user =
+                result.user;
+
+
+            if (!user) {
+
+                throw new Error(
+                    "Unable to load owner account."
+                );
+            }
+
+
+            authenticatedOwner =
+                user;
+
+
+            document.getElementById(
+                "owner-profile-name"
+            ).value =
+                user.name || "";
+
+
+            document.getElementById(
+                "owner-profile-email"
+            ).value =
+                user.email || "";
+
+
+            document.getElementById(
+                "owner-profile-phone"
+            ).value =
+                user.phone || "";
+
+
+            const emailStatus =
+                document.getElementById(
+                    "owner-profile-email-status"
+                );
+
+
+            const phoneStatus =
+                document.getElementById(
+                    "owner-profile-phone-status"
+                );
+
+
+            if (emailStatus) {
+
+                emailStatus.textContent =
+                    user.email_verified
+                        ? "✓ Email verified"
+                        : "Email not verified";
+            }
+
+
+            if (phoneStatus) {
+
+                phoneStatus.textContent =
+                    user.phone_verified
+                        ? "✓ Phone verified"
+                        : user.phone
+                            ? "Phone not verified"
+                            : "No phone number added";
+            }
+
+
+            overlay.style.display =
+                "block";
+
+
+            document.body.style.overflow =
+                "hidden";
+
+
+        } catch (error) {
+
+            showToast(
+                error.message ||
+                "Unable to load owner profile.",
+                "danger"
+            );
+        }
+    }
+
+
+    openButtons.forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById(
+                            "owner-account-menu"
+                        )
+                        ?.classList
+                        .remove(
+                            "active"
+                        );
+
+
+                    document
+                        .getElementById(
+                            "dashboard-more-menu"
+                        )
+                        ?.classList
+                        .remove(
+                            "active"
+                        );
+
+
+                    openProfile();
+                }
+            );
+        }
+    );
+
+
+    closeButton?.addEventListener(
+        "click",
+        closeProfile
+    );
+
+
+    cancelButton?.addEventListener(
+        "click",
+        closeProfile
+    );
+
+
+    overlay.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === overlay
+            ) {
+                closeProfile();
+            }
+        }
+    );
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const name =
+                document
+                    .getElementById(
+                        "owner-profile-name"
+                    )
+                    .value
+                    .trim();
+
+
+            const phone =
+                document
+                    .getElementById(
+                        "owner-profile-phone"
+                    )
+                    .value
+                    .trim();
+
+
+            if (
+                name.length < 2
+            ) {
+
+                showToast(
+                    "Please enter a valid owner name.",
+                    "danger"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                if (saveButton) {
+
+                    saveButton.disabled =
+                        true;
+
+                    saveButton.textContent =
+                        "Saving...";
+                }
+
+
+                const result =
+                    await ParkSmartAPI
+                        .updateCurrentUser({
+                            name,
+                            phone:
+                                phone || null,
+                        });
+
+
+                authenticatedOwner =
+                    result.user;
+
+
+                const ownerName =
+                    authenticatedOwner.name ||
+                    "Parking Owner";
+
+
+                const initials =
+                    getOwnerInitials(
+                        ownerName
+                    );
+
+
+                const dockAvatar =
+                    document.getElementById(
+                        "dock-owner-avatar"
+                    );
+
+
+                const menuAvatar =
+                    document.getElementById(
+                        "owner-menu-avatar"
+                    );
+
+
+                const menuName =
+                    document.getElementById(
+                        "owner-menu-name"
+                    );
+
+
+                const accountButton =
+                    document.getElementById(
+                        "owner-account-button"
+                    );
+
+
+                if (dockAvatar) {
+                    dockAvatar.textContent =
+                        initials;
+                }
+
+
+                if (menuAvatar) {
+                    menuAvatar.textContent =
+                        initials;
+                }
+
+
+                if (menuName) {
+                    menuName.textContent =
+                        ownerName;
+                }
+
+
+                if (accountButton) {
+                    accountButton.title =
+                        ownerName;
+                }
+
+
+                closeProfile();
+
+
+                showToast(
+                    result.message ||
+                    "Profile updated successfully.",
+                    "success"
+                );
+
+
+            } catch (error) {
+
+                showToast(
+                    error.message ||
+                    "Unable to update owner profile.",
+                    "danger"
+                );
+
+
+            } finally {
+
+                if (saveButton) {
+
+                    saveButton.disabled =
+                        false;
+
+                    saveButton.textContent =
+                        "Save Profile";
+                }
+            }
+        }
+    );
+}
+
+function initOwnerAccountDock() {
+
+    const button =
+        document.getElementById(
+            "owner-account-button"
+        );
+
+
+    const menu =
+        document.getElementById(
+            "owner-account-menu"
+        );
+
+
+    const dockAvatar =
+        document.getElementById(
+            "dock-owner-avatar"
+        );
+
+
+    const menuAvatar =
+        document.getElementById(
+            "owner-menu-avatar"
+        );
+
+
+    const menuName =
+        document.getElementById(
+            "owner-menu-name"
+        );
+
+
+    if (!button || !menu) {
+        return;
+    }
+
+
+    // ========================================
+    // REAL OWNER IDENTITY
+    // ========================================
+
+    const ownerName =
+        authenticatedOwner?.name ||
+        "Parking Owner";
+
+
+    const initials =
+        getOwnerInitials(
+            ownerName
+        );
+
+
+    if (dockAvatar) {
+        dockAvatar.textContent =
+            initials;
+    }
+
+
+    if (menuAvatar) {
+        menuAvatar.textContent =
+            initials;
+    }
+
+
+    if (menuName) {
+        menuName.textContent =
+            ownerName;
+    }
+
+
+    // Native browser tooltip on hover
+    button.title =
+        ownerName;
+
+
+    // ========================================
+    // OPEN / CLOSE ACCOUNT MENU
+    // ========================================
+
+    button.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+
+            const isOpen =
+                menu.classList.toggle(
+                    "active"
+                );
+
+
+            button.setAttribute(
+                "aria-expanded",
+                String(isOpen)
+            );
+        }
+    );
+
+
+    menu.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        () => {
+
+            menu.classList.remove(
+                "active"
+            );
+
+
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+        }
+    );
+
+
+    // ========================================
+    // SIGN OUT
+    // ========================================
+
+    document
+        .getElementById(
+            "dock-sign-out"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                window.ParkSmartAPI
+                    ?.logoutOwner?.();
+
+
+                window.location.href =
+                    "/pages/owner.html#auth-section";
+            }
+        );
+}
+
+document.addEventListener(
+    'DOMContentLoaded',
+    async () => {
+
+        initNav();
+
+        initForgotPassword();
+
+        initOwnerAuth();
+
+        const authReady =
+            await syncAuthGuardUI();
+
+        // A dashboard redirect may already
+        // be underway if authentication
+        // failed.
+
+        if (
+            document.querySelector(
+                '.owner-dashboard-root'
+            ) &&
+            !authReady
+        ) {
+
+            return;
+        }
+
+        initOwnerTheme();
+
+        initDashboardMenu();
+
+        initEditParkingSpace();
+
+        initParkingLocationPresets();
+
+        initApplyForm();
+
+        initOwnerBookingFilters();
+
+        initOwnerBookingActions();
+
+        initOwnerOperatingHours();
+
+        initOwnerParkingImages();
+
+        await initOwnerDashboard();
+
+        initOwnerProfile();
+
+        initOwnerAccountDock();
+    }
+);
