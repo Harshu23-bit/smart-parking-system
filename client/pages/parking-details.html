@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Parking Details</title>
+
+    <link
+        rel="stylesheet"
+        href="../css/user.css"
+    >
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        ParkSmart
+    </div>
+
+    <nav class="nav-links">
+
+        <a href="user-dashboard.html">
+            Search
+        </a>
+
+        <a href="my-bookings.html">
+            My Bookings
+        </a>
+
+        <a href="my-vehicles.html">
+            Vehicles
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <div id="details">
+        Loading...
+    </div>
+
+</main>
+
+
+<script src="../js/user.js"></script>
+
+<script>
+
+requireUser();
+
+
+const id =
+    new URLSearchParams(
+        window.location.search
+    ).get("id");
+
+
+if (!id) {
+    window.location.href =
+        "user-dashboard.html";
+}
+
+
+loadDetails();
+
+
+async function loadDetails() {
+
+    try {
+
+        const data =
+            await getParkingDetails(id);
+
+        const p =
+            data.parking;
+
+        const image =
+            p.images?.[0]?.image_url ||
+            "../assets/images/hero-parking.jpg";
+
+        document
+            .getElementById("details")
+            .innerHTML = `
+
+            <div class="card">
+
+                <img
+                    class="parking-image"
+                    src="${image}"
+                    alt="${escapeHtml(p.name)}"
+                >
+
+                <h1>
+                    ${escapeHtml(p.name)}
+                </h1>
+
+                <p>
+                    ⭐ 4.5
+                </p>
+
+                <p>
+                    📍 ${escapeHtml(p.address)}
+                    ${p.city ? ", " + escapeHtml(p.city) : ""}
+                </p>
+
+                <p class="price">
+                    ₹${Number(p.price_per_hour).toFixed(0)}/hour
+                </p>
+
+                <p class="available">
+                    🟢 ${p.available_spaces}
+                    spaces available
+                </p>
+
+                <p>
+                    🚗 ${formatParkingType(p.parking_type)}
+                </p>
+
+                <hr>
+
+                <h3>
+                    Description
+                </h3>
+
+                <p>
+                    ${escapeHtml(
+                        p.description ||
+                        "Convenient parking facility."
+                    )}
+                </p>
+
+                <h3>
+                    Amenities
+                </h3>
+
+                <p>
+                    ${formatAmenities(p.amenities)}
+                </p>
+
+                <br>
+
+                <a
+                    class="btn btn-primary"
+                    href="booking.html?id=${p.id}"
+                >
+                    Book This Parking
+                </a>
+
+            </div>
+        `;
+
+    } catch (error) {
+
+        document
+            .getElementById("details")
+            .innerHTML = `
+                <div class="card">
+                    <h2>Error</h2>
+                    <p>${escapeHtml(error.message)}</p>
+                </div>
+            `;
+    }
+}
+
+
+function formatParkingType(type) {
+
+    return String(type || "")
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+
+function formatAmenities(amenities) {
+
+    if (!Array.isArray(amenities) ||
+        amenities.length === 0) {
+
+        return "CCTV • Security • Well Lit";
+    }
+
+    return amenities
+        .map(a => `✓ ${escapeHtml(String(a))}`)
+        .join(" • ");
+}
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+</script>
+
+</body>
+</html>

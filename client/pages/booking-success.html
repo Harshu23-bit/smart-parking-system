@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Booking Confirmation</title>
+
+    <link
+        rel="stylesheet"
+        href="../css/user.css"
+    >
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        ParkSmart
+    </div>
+
+    <nav class="nav-links">
+
+        <a href="user-dashboard.html">
+            Search
+        </a>
+
+        <a href="my-bookings.html">
+            My Bookings
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <div
+        id="content"
+        class="card"
+    >
+
+        <h1>
+            Complete Payment
+        </h1>
+
+        <p>
+            Please complete your payment to confirm the booking.
+        </p>
+
+        <button
+            id="payButton"
+            class="btn btn-primary"
+        >
+            Pay Now
+        </button>
+
+    </div>
+
+</main>
+
+
+<script src="../js/user.js"></script>
+
+<script>
+
+requireUser();
+
+
+const bookingId =
+    new URLSearchParams(
+        window.location.search
+    ).get("id");
+
+
+let booking;
+
+
+loadPayment();
+
+
+async function loadPayment() {
+
+    try {
+
+        const data =
+            await createPaymentOrder(
+                bookingId
+            );
+
+        booking =
+            data.booking;
+
+        document
+            .getElementById("payButton")
+            .onclick =
+            () => openPayment(
+                data.payment
+            );
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+function openPayment(payment) {
+
+    const options = {
+
+        key:
+            payment.key_id,
+
+        amount:
+            payment.amount_paise,
+
+        currency:
+            payment.currency || "INR",
+
+        name:
+            "ParkSmart",
+
+        description:
+            `Parking Booking ${booking.booking_reference}`,
+
+        order_id:
+            payment.provider_order_id,
+
+        handler:
+            async function(response) {
+
+                try {
+
+                    const result =
+                        await verifyPayment({
+
+                            booking_id:
+                                bookingId,
+
+                            razorpay_order_id:
+                                response.razorpay_order_id,
+
+                            razorpay_payment_id:
+                                response.razorpay_payment_id,
+
+                            razorpay_signature:
+                                response.razorpay_signature
+
+                        });
+
+
+                    showSuccess(
+                        result.booking
+                    );
+
+                } catch (error) {
+
+                    alert(
+                        "Payment verification failed: " +
+                        error.message
+                    );
+                }
+            },
+
+        theme: {
+            color: "#2563eb"
+        }
+
+    };
+
+
+    const razorpay =
+        new Razorpay(options);
+
+    razorpay.open();
+}
+
+
+function showSuccess(confirmedBooking) {
+
+    const content =
+        document.getElementById(
+            "content"
+        );
+
+
+    content.innerHTML = `
+
+        <div style="text-align:center">
+
+            <h1>
+                ✅ Booking Confirmed
+            </h1>
+
+            <h2>
+                ${escapeHtml(
+                    confirmedBooking.parking_name ||
+                    "Parking Space"
+                )}
+            </h2>
+
+            <p>
+                Booking ID:
+                <strong>
+                    ${escapeHtml(
+                        confirmedBooking.booking_reference
+                    )}
+                </strong>
+            </p>
+
+            <p>
+                Status:
+                <span class="badge">
+                    CONFIRMED
+                </span>
+            </p>
+
+            <p>
+                Amount:
+                ₹${Number(
+                    confirmedBooking.total_amount
+                ).toFixed(2)}
+            </p>
+
+            <div
+                id="qrcode"
+                style="
+                    display:flex;
+                    justify-content:center;
+                    margin:25px;
+                "
+            ></div>
+
+            <p>
+                Show this QR code at the parking entry.
+            </p>
+
+            <a
+                class="btn btn-primary"
+                href="my-bookings.html"
+            >
+                View My Bookings
+            </a>
+
+        </div>
+    `;
+
+
+    new QRCode(
+        document.getElementById(
+            "qrcode"
+        ),
+        {
+            text: JSON.stringify({
+
+                booking_id:
+                    confirmedBooking.id,
+
+                booking_reference:
+                    confirmedBooking.booking_reference
+
+            }),
+
+            width: 220,
+            height: 220
+        }
+    );
+}
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+</script>
+
+</body>
+</html>

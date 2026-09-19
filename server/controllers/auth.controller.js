@@ -1165,9 +1165,207 @@ async function resetPassword(
     }
 }
 
+async function registerUser(req, res) {
+    const { name, email, phone, password } = req.body || {};
+
+    try {
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                status: "error",
+                message: "Name, email and password are required."
+            });
+        }
+
+        const cleanName = String(name).trim();
+        const cleanEmail = String(email).trim().toLowerCase();
+        const cleanPhone = phone ? String(phone).trim() : null;
+
+        if (cleanName.length < 2 || cleanName.length > 100) {
+            return res.status(400).json({
+                status: "error",
+                message: "Name must be between 2 and 100 characters."
+            });
+        }
+
+        if (!EMAIL_REGEX.test(cleanEmail)) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid email address."
+            });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({
+                status: "error",
+                message: "Password must contain at least 8 characters."
+            });
+        }
+
+        const existing = await pool.query(
+            `SELECT id FROM users WHERE email = $1 LIMIT 1`,
+            [cleanEmail]
+        );
+
+        if (existing.rowCount > 0) {
+            return res.status(409).json({
+                status: "error",
+                message: "An account with this email already exists."
+            });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        const result = await pool.query(
+            `
+            INSERT INTO users (
+                name,
+                email,
+                phone,
+                password_hash,
+                role,
+                email_verified
+            )
+            VALUES ($1, $2, $3, $4, 'user', FALSE)
+            RETURNING
+                id,
+                name,
+                email,
+                phone,
+                role,
+                email_verified,
+                phone_verified,
+                created_at
+            `,
+            [
+                cleanName,
+                cleanEmail,
+                cleanPhone,
+                passwordHash
+            ]
+        );
+
+        return res.status(201).json({
+            status: "success",
+            message: "User account created successfully.",
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("User registration error:", error);
+
+        return res.status(500).json({
+            status: "error",
+            message: "Unable to create user account."
+        });
+    }
+}
+
+
+async function loginUser(req, res) {
+    const { email, password } = req.body || {};
+
+    try {
+        if (!email || !password) {
+            return res.status(400).json({
+                status: "error",
+                message: "Email and password are required."
+            });
+        }
+
+        const cleanEmail = String(email).trim().toLowerCase();
+
+        const result = await pool.query(
+            `
+            SELECT
+                id,
+                name,
+                email,
+                phone,
+                password_hash,
+                role,
+                email_verified,
+                phone_verified,
+                created_at
+            FROM users
+            WHERE email = $1
+            LIMIT 1
+            `,
+            [cleanEmail]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(401).json({
+                status: "error",
+                message: "Invalid email or password."
+            });
+        }
+
+        const user = result.rows[0];
+
+        if (user.role !== "user") {
+            return res.status(403).json({
+                status: "error",
+                message: "This account is not a user account."
+            });
+        }
+
+        const passwordMatches = await bcrypt.compare(
+            password,
+            user.password_hash
+        );
+
+        if (!passwordMatches) {
+            return res.status(401).json({
+                status: "error",
+                message: "Invalid email or password."
+            });
+        }
+
+        const token = jwt.sign(
+            {
+                sub: user.id,
+                role: "user",
+                emailVerified: user.email_verified
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: process.env.JWT_EXPIRES_IN || "1d"
+            }
+        );
+
+        return res.json({
+            status: "success",
+            message: "Login successful.",
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                email_verified: user.email_verified,
+                phone_verified: user.phone_verified,
+                created_at: user.created_at
+            }
+        });
+
+    } catch (error) {
+        console.error("User login error:", error);
+
+        return res.status(500).json({
+            status: "error",
+            message: "Unable to log in."
+        });
+    }
+}
+
 module.exports = {
     registerOwner,
     loginOwner,
+
+    registerUser,
+    loginUser,
+
     getCurrentUser,
     updateCurrentUser,
     sendVerificationOtp,

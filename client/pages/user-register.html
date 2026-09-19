@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkSmart - Register</title>
+    <link rel="stylesheet" href="../css/user.css">
+</head>
+
+<body>
+
+<div class="auth-wrapper">
+
+    <div class="card auth-card">
+
+        <h1>Create Account</h1>
+
+        <div id="message" class="message"></div>
+
+        <form id="registerForm">
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input class="input" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input class="input" type="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone</label>
+                <input class="input" name="phone">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input
+                    class="input"
+                    type="password"
+                    name="password"
+                    minlength="8"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input
+                    class="input"
+                    type="password"
+                    name="confirmPassword"
+                    minlength="8"
+                    required
+                >
+            </div>
+
+            <button class="btn btn-primary" type="submit">
+                Create Account
+            </button>
+
+        </form>
+
+        <p>
+            Already registered?
+            <a href="user-login.html">Login</a>
+        </p>
+
+    </div>
+
+</div>
+
+<script src="../js/user.js"></script>
+
+<script>
+document
+    .getElementById("registerForm")
+    .addEventListener("submit", async function(e) {
+
+        e.preventDefault();
+
+        const form = new FormData(this);
+        const message = document.getElementById("message");
+
+        const password = form.get("password");
+        const confirm = form.get("confirmPassword");
+
+        if (password !== confirm) {
+            message.textContent = "Passwords do not match.";
+            message.classList.add("show");
+            return;
+        }
+
+        try {
+
+            await registerUser({
+                name: form.get("name"),
+                email: form.get("email"),
+                phone: form.get("phone"),
+                password
+            });
+
+            alert("Account created successfully.");
+
+            window.location.href = "user-login.html";
+
+        } catch (error) {
+
+            message.textContent = error.message;
+            message.classList.add("show");
+        }
+    });
+</script>
+
+</body>
+</html>

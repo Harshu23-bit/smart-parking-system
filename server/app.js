@@ -15,6 +15,7 @@ const ownerRoutes = require("./routes/owner.routes");
 const vehicleRoutes = require("./routes/vehicle.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const paymentRoutes = require("./routes/payment.routes");
+const parkingRoutes = require("./routes/parking.routes");
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use(
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/owner", ownerRoutes);
+app.use("/api/parking", parkingRoutes);
 
 // Serve uploaded parking images
 app.use(

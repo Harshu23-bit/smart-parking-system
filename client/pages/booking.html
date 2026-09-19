@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Book Parking</title>
+
+    <link
+        rel="stylesheet"
+        href="../css/user.css"
+    >
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        ParkSmart
+    </div>
+
+    <nav class="nav-links">
+
+        <a href="user-dashboard.html">
+            Search
+        </a>
+
+        <a href="my-bookings.html">
+            My Bookings
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <h1>
+        Book Parking
+    </h1>
+
+
+    <div
+        class="booking-grid"
+    >
+
+        <div
+            id="parking"
+            class="card"
+        >
+            Loading parking...
+        </div>
+
+
+        <div class="card">
+
+            <h2>
+                Booking Details
+            </h2>
+
+
+            <form id="bookingForm">
+
+                <div class="form-group">
+
+                    <label>
+                        Vehicle
+                    </label>
+
+                    <select
+                        class="input"
+                        id="vehicle"
+                        required
+                    >
+                        <option value="">
+                            Loading vehicles...
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Date
+                    </label>
+
+                    <input
+                        class="input"
+                        type="date"
+                        id="date"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Entry Time
+                    </label>
+
+                    <input
+                        class="input"
+                        type="time"
+                        id="start"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Expected Exit
+                    </label>
+
+                    <input
+                        class="input"
+                        type="time"
+                        id="end"
+                        required
+                    >
+
+                </div>
+
+
+                <hr>
+
+
+                <p>
+                    Rate:
+                    <strong id="rate">
+                        ₹0/hr
+                    </strong>
+                </p>
+
+
+                <p>
+                    Duration:
+                    <strong id="duration">
+                        0 hours
+                    </strong>
+                </p>
+
+
+                <h2>
+                    Estimated:
+                    <span id="total">
+                        ₹0
+                    </span>
+                </h2>
+
+
+                <button
+                    class="btn btn-primary"
+                    type="submit"
+                >
+                    Continue to Payment
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<script src="../js/user.js"></script>
+
+<script>
+
+requireUser();
+
+
+const parkingId =
+    new URLSearchParams(
+        window.location.search
+    ).get("id");
+
+
+let parking = null;
+
+
+const date =
+    document.getElementById("date");
+
+date.min =
+    new Date()
+        .toISOString()
+        .split("T")[0];
+
+
+load();
+
+
+async function load() {
+
+    try {
+
+        const parkingData =
+            await getParkingDetails(
+                parkingId
+            );
+
+        parking =
+            parkingData.parking;
+
+        document
+            .getElementById("parking")
+            .innerHTML = `
+
+                <h2>
+                    ${escapeHtml(
+                        parking.name
+                    )}
+                </h2>
+
+                <p>
+                    📍 ${escapeHtml(
+                        parking.address
+                    )}
+                </p>
+
+                <p>
+                    🟢 ${parking.available_spaces}
+                    spaces available
+                </p>
+
+                <h2>
+                    ₹${Number(
+                        parking.price_per_hour
+                    ).toFixed(0)}/hour
+                </h2>
+
+            `;
+
+
+        document
+            .getElementById("rate")
+            .textContent =
+            `₹${Number(
+                parking.price_per_hour
+            ).toFixed(0)}/hr`;
+
+
+        const vehicles =
+            await getVehicles();
+
+        const select =
+            document.getElementById(
+                "vehicle"
+            );
+
+        if (!vehicles.vehicles.length) {
+
+            select.innerHTML = `
+                <option value="">
+                    Add a vehicle first
+                </option>
+            `;
+
+            return;
+        }
+
+
+        select.innerHTML =
+            `<option value="">
+                Select vehicle
+            </option>` +
+            vehicles.vehicles
+                .map(v => `
+                    <option value="${v.id}">
+                        ${escapeHtml(
+                            v.registration_number
+                        )}
+                        -
+                        ${escapeHtml(
+                            v.model || v.vehicle_type
+                        )}
+                    </option>
+                `)
+                .join("");
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+function calculateTotal() {
+
+    const start =
+        document.getElementById(
+            "start"
+        ).value;
+
+    const end =
+        document.getElementById(
+            "end"
+        ).value;
+
+    if (!start || !end) {
+        return;
+    }
+
+
+    if (end <= start) {
+
+        document
+            .getElementById("duration")
+            .textContent =
+            "Invalid";
+
+        document
+            .getElementById("total")
+            .textContent =
+            "₹0";
+
+        return;
+    }
+
+
+    const [
+        sh,
+        sm
+    ] = start.split(":").map(Number);
+
+    const [
+        eh,
+        em
+    ] = end.split(":").map(Number);
+
+
+    const minutes =
+        (eh * 60 + em) -
+        (sh * 60 + sm);
+
+
+    const hours =
+        minutes / 60;
+
+
+    const amount =
+        hours *
+        Number(
+            parking.price_per_hour
+        );
+
+
+    document
+        .getElementById("duration")
+        .textContent =
+        `${hours.toFixed(2)} hours`;
+
+
+    document
+        .getElementById("total")
+        .textContent =
+        `₹${amount.toFixed(2)}`;
+}
+
+
+document
+    .getElementById("start")
+    .addEventListener(
+        "change",
+        calculateTotal
+    );
+
+
+document
+    .getElementById("end")
+    .addEventListener(
+        "change",
+        calculateTotal
+    );
+
+
+document
+    .getElementById("bookingForm")
+    .addEventListener("submit", async function(e) {
+
+        e.preventDefault();
+
+        const vehicleId =
+            document.getElementById(
+                "vehicle"
+            ).value;
+
+        const bookingDate =
+            date.value;
+
+        const start =
+            document.getElementById(
+                "start"
+            ).value;
+
+        const end =
+            document.getElementById(
+                "end"
+            ).value;
+
+
+        if (!vehicleId) {
+
+            alert(
+                "Please select a vehicle."
+            );
+
+            return;
+        }
+
+
+        if (end <= start) {
+
+            alert(
+                "Exit time must be after entry time."
+            );
+
+            return;
+        }
+
+
+        const startTime =
+            `${bookingDate}T${start}:00`;
+
+        const endTime =
+            `${bookingDate}T${end}:00`;
+
+
+        try {
+
+            const data =
+                await createBooking({
+
+                    parking_space_id:
+                        parkingId,
+
+                    vehicle_id:
+                        vehicleId,
+
+                    start_time:
+                        startTime,
+
+                    end_time:
+                        endTime
+
+                });
+
+
+            /*
+             * Store booking temporarily.
+             */
+            sessionStorage.setItem(
+                "parksmart_booking",
+                JSON.stringify(
+                    data.booking
+                )
+            );
+
+
+            /*
+             * Go to payment page.
+             */
+            window.location.href =
+                `booking-success.html?id=${data.booking.id}`;
+
+        } catch (error) {
+
+            alert(error.message);
+        }
+    });
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+</script>
+
+</body>
+</html>

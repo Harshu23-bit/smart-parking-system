@@ -3,6 +3,10 @@ const express = require("express");
 const {
     registerOwner,
     loginOwner,
+
+    registerUser,
+    loginUser,
+
     getCurrentUser,
     updateCurrentUser,
     sendVerificationOtp,
@@ -18,6 +22,10 @@ const router = express.Router();
 
 router.post("/register", registerOwner);
 router.post("/login", loginOwner);
+
+router.post("/user/register", registerUser);
+router.post("/user/login", loginUser);
+
 
 router.post(
     "/forgot-password",

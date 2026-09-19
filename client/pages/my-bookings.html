@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>My Bookings</title>
+
+    <link
+        rel="stylesheet"
+        href="../css/user.css"
+    >
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        ParkSmart
+    </div>
+
+    <nav class="nav-links">
+
+        <a href="user-dashboard.html">
+            Search
+        </a>
+
+        <a href="my-vehicles.html">
+            Vehicles
+        </a>
+
+        <button
+            class="btn btn-danger"
+            onclick="logoutUser()"
+        >
+            Logout
+        </button>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <h1>
+        My Bookings
+    </h1>
+
+
+    <div
+        id="bookings"
+    >
+        Loading...
+    </div>
+
+</main>
+
+
+<script src="../js/user.js"></script>
+
+<script>
+
+requireUser();
+
+loadBookings();
+
+
+async function loadBookings() {
+
+    try {
+
+        const data =
+            await getMyBookings();
+
+        const bookings =
+            data.bookings ||
+            data.data ||
+            [];
+
+
+        if (!bookings.length) {
+
+            document
+                .getElementById("bookings")
+                .innerHTML = `
+                    <div class="card">
+                        <h2>
+                            No bookings yet
+                        </h2>
+
+                        <a
+                            class="btn btn-primary"
+                            href="user-dashboard.html"
+                        >
+                            Find Parking
+                        </a>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        document
+            .getElementById("bookings")
+            .innerHTML = bookings
+                .map(renderBooking)
+                .join("");
+
+    } catch (error) {
+
+        document
+            .getElementById("bookings")
+            .innerHTML = `
+                <div class="card">
+                    ${escapeHtml(
+                        error.message
+                    )}
+                </div>
+            `;
+    }
+}
+
+
+function renderBooking(b) {
+
+    const start =
+        new Date(
+            b.start_time
+        ).toLocaleString();
+
+    const end =
+        new Date(
+            b.end_time
+        ).toLocaleString();
+
+
+    const status =
+        String(
+            b.status || ""
+        ).toUpperCase();
+
+
+    return `
+
+        <div
+            class="card"
+            style="margin-bottom:20px"
+        >
+
+            <div class="space-between">
+
+                <div>
+
+                    <h2>
+                        ${escapeHtml(
+                            b.parking_name ||
+                            "Parking"
+                        )}
+                    </h2>
+
+                    <p>
+                        Booking:
+                        ${escapeHtml(
+                            b.booking_reference
+                        )}
+                    </p>
+
+                </div>
+
+                <span class="badge">
+                    ${status}
+                </span>
+
+            </div>
+
+
+            <p>
+                🕐
+                ${start}
+                →
+                ${end}
+            </p>
+
+
+            <p>
+                💰 ₹${Number(
+                    b.total_amount || 0
+                ).toFixed(2)}
+            </p>
+
+
+            <p>
+                Payment:
+                ${escapeHtml(
+                    b.payment_status ||
+                    "unpaid"
+                )}
+            </p>
+
+
+            ${
+                ["pending", "confirmed"]
+                    .includes(
+                        String(b.status)
+                    )
+                ?
+                `
+                <button
+                    class="btn btn-danger"
+                    onclick="cancelMyBooking('${b.id}')"
+                >
+                    Cancel Booking
+                </button>
+                `
+                :
+                ""
+            }
+
+        </div>
+    `;
+}
+
+
+async function cancelMyBooking(id) {
+
+    if (!confirm(
+        "Are you sure you want to cancel this booking?"
+    )) {
+        return;
+    }
+
+
+    try {
+
+        await cancelBooking(
+            id,
+            "Cancelled by user"
+        );
+
+        alert(
+            "Booking cancelled."
+        );
+
+        loadBookings();
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+</script>
+
+</body>
+
+</html>

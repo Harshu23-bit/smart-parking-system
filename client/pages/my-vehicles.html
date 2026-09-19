@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>My Vehicles</title>
+
+    <link
+        rel="stylesheet"
+        href="../css/user.css"
+    >
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        ParkSmart
+    </div>
+
+    <nav class="nav-links">
+
+        <a href="user-dashboard.html">
+            Search
+        </a>
+
+        <a href="my-bookings.html">
+            My Bookings
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <h1>
+        My Vehicles
+    </h1>
+
+
+    <div class="card">
+
+        <h2>
+            Add Vehicle
+        </h2>
+
+        <form id="vehicleForm">
+
+            <div class="form-group">
+                <label>Registration Number</label>
+
+                <input
+                    class="input"
+                    name="registration_number"
+                    placeholder="MH03AB1234"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Manufacturer</label>
+
+                <input
+                    class="input"
+                    name="manufacturer"
+                    placeholder="Honda"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Model</label>
+
+                <input
+                    class="input"
+                    name="model"
+                    placeholder="City"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Colour</label>
+
+                <input
+                    class="input"
+                    name="color"
+                    placeholder="White"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Vehicle Type</label>
+
+                <select
+                    class="input"
+                    name="vehicle_type"
+                    required
+                >
+
+                    <option value="car">
+                        Car
+                    </option>
+
+                    <option value="motorcycle">
+                        Motorcycle
+                    </option>
+
+                    <option value="scooter">
+                        Scooter
+                    </option>
+
+                    <option value="van">
+                        Van
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Fuel Type</label>
+
+                <select
+                    class="input"
+                    name="fuel_type"
+                >
+
+                    <option value="">
+                        Select
+                    </option>
+
+                    <option value="petrol">
+                        Petrol
+                    </option>
+
+                    <option value="diesel">
+                        Diesel
+                    </option>
+
+                    <option value="cng">
+                        CNG
+                    </option>
+
+                    <option value="electric">
+                        Electric
+                    </option>
+
+                    <option value="hybrid">
+                        Hybrid
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <button
+                class="btn btn-primary"
+                type="submit"
+            >
+                Add Vehicle
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <br>
+
+
+    <div
+        id="vehicles"
+        class="parking-grid"
+    ></div>
+
+</main>
+
+
+<script src="../js/user.js"></script>
+
+<script>
+
+requireUser();
+
+loadVehicles();
+
+
+async function loadVehicles() {
+
+    try {
+
+        const data =
+            await getVehicles();
+
+        const container =
+            document.getElementById("vehicles");
+
+        if (!data.vehicles.length) {
+
+            container.innerHTML = `
+                <div class="card">
+                    <h3>No vehicles added.</h3>
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML =
+            data.vehicles.map(v => `
+
+                <div class="card">
+
+                    <h2>
+                        🚗 ${escapeHtml(
+                            v.registration_number
+                        )}
+                    </h2>
+
+                    <p>
+                        ${escapeHtml(
+                            v.manufacturer || ""
+                        )}
+                        ${escapeHtml(
+                            v.model || ""
+                        )}
+                    </p>
+
+                    <p>
+                        Type:
+                        ${escapeHtml(v.vehicle_type)}
+                    </p>
+
+                    <p>
+                        Fuel:
+                        ${escapeHtml(
+                            v.fuel_type || "N/A"
+                        )}
+                    </p>
+
+                    ${
+                        v.is_default
+                        ? `<span class="badge">Default</span>`
+                        : ""
+                    }
+
+                </div>
+
+            `).join("");
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+document
+    .getElementById("vehicleForm")
+    .addEventListener("submit", async function(e) {
+
+        e.preventDefault();
+
+        const form =
+            new FormData(this);
+
+        try {
+
+            await addVehicle({
+
+                registration_number:
+                    form.get("registration_number"),
+
+                manufacturer:
+                    form.get("manufacturer"),
+
+                model:
+                    form.get("model"),
+
+                color:
+                    form.get("color"),
+
+                vehicle_type:
+                    form.get("vehicle_type"),
+
+                fuel_type:
+                    form.get("fuel_type") || null,
+
+                is_default: true
+
+            });
+
+            this.reset();
+
+            await loadVehicles();
+
+            alert("Vehicle added successfully.");
+
+        } catch (error) {
+
+            alert(error.message);
+        }
+    });
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+</script>
+
+</body>
+</html>

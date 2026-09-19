@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ParkSmart - Dashboard</title>
+
+    <link rel="stylesheet" href="../css/user.css">
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        ParkSmart
+    </div>
+
+    <nav class="nav-links">
+
+        <a href="user-dashboard.html">
+            Search
+        </a>
+
+        <a href="my-bookings.html">
+            My Bookings
+        </a>
+
+        <a href="my-vehicles.html">
+            My Vehicles
+        </a>
+
+        <button
+            class="btn btn-danger"
+            onclick="logoutUser()"
+        >
+            Logout
+        </button>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <div class="space-between">
+
+        <div>
+            <h1>
+                Find Your Parking
+            </h1>
+
+            <p>
+                Search available parking near your destination.
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <form
+            id="searchForm"
+            class="search-box"
+        >
+
+            <div>
+                <label>
+                    Destination
+                </label>
+
+                <input
+                    class="input"
+                    name="q"
+                    placeholder="Phoenix Marketcity, Kurla"
+                >
+            </div>
+
+            <div>
+                <label>
+                    Date
+                </label>
+
+                <input
+                    class="input"
+                    type="date"
+                    id="date"
+                    required
+                >
+            </div>
+
+            <div>
+                <label>
+                    Start
+                </label>
+
+                <input
+                    class="input"
+                    type="time"
+                    id="start"
+                    required
+                >
+            </div>
+
+            <div>
+                <label>
+                    End
+                </label>
+
+                <input
+                    class="input"
+                    type="time"
+                    id="end"
+                    required
+                >
+            </div>
+
+            <button
+                class="btn btn-primary"
+                type="submit"
+            >
+                Search
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <div
+        id="results"
+        class="parking-grid"
+    ></div>
+
+</main>
+
+
+<script src="../js/user.js"></script>
+
+<script>
+
+requireUser();
+
+
+const dateInput =
+    document.getElementById("date");
+
+const today =
+    new Date().toISOString().split("T")[0];
+
+dateInput.min = today;
+
+
+document
+    .getElementById("searchForm")
+    .addEventListener("submit", async function(e) {
+
+        e.preventDefault();
+
+        const form =
+            new FormData(this);
+
+        const date =
+            document.getElementById("date").value;
+
+        const start =
+            document.getElementById("start").value;
+
+        const end =
+            document.getElementById("end").value;
+
+        if (end <= start) {
+            alert("End time must be after start time.");
+            return;
+        }
+
+        const startTime =
+            `${date}T${start}:00`;
+
+        const endTime =
+            `${date}T${end}:00`;
+
+        try {
+
+            const data =
+                await searchParking({
+                    q: form.get("q"),
+                    startTime,
+                    endTime
+                });
+
+            renderParking(data.parking);
+
+        } catch (error) {
+
+            alert(error.message);
+        }
+    });
+
+
+function renderParking(parking) {
+
+    const results =
+        document.getElementById("results");
+
+    if (!parking.length) {
+
+        results.innerHTML = `
+            <div class="card">
+                <h2>No parking found</h2>
+                <p>
+                    Try another location or time.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    results.innerHTML =
+        parking.map(p => {
+
+            const image =
+                p.images?.[0]?.image_url ||
+                "../assets/images/hero-parking.jpg";
+
+            return `
+                <div class="card parking-card">
+
+                    <img
+                        class="parking-image"
+                        src="${image}"
+                        alt="${escapeHtml(p.name)}"
+                    >
+
+                    <h2>
+                        ${escapeHtml(p.name)}
+                    </h2>
+
+                    <p>
+                        📍 ${escapeHtml(p.address)}
+                    </p>
+
+                    <p>
+                        ⭐ 4.5
+                    </p>
+
+                    <p class="price">
+                        ₹${Number(p.price_per_hour).toFixed(0)}/hr
+                    </p>
+
+                    <p class="available">
+                        🟢 ${p.available_spaces}
+                        spaces available
+                    </p>
+
+                    <p>
+                        🚗 ${formatParkingType(p.parking_type)}
+                    </p>
+
+                    <a
+                        class="btn btn-primary"
+                        href="parking-details.html?id=${p.id}"
+                    >
+                        View Details
+                    </a>
+
+                </div>
+            `;
+
+        }).join("");
+}
+
+
+function formatParkingType(type) {
+
+    return String(type || "")
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+</script>
+
+</body>
+</html>
