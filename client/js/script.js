@@ -28,39 +28,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const pauseAfterDelete = 400;
 
     function typewrite() {
-        const currentPhrase = phrases[phraseIndex];
+    const currentPhrase = phrases[phraseIndex];
 
-        if (!isDeleting) {
-            // Typing
-            cursorEl.classList.remove('eating');
-            typewriterEl.textContent = currentPhrase.substring(0, charIndex + 1);
-            charIndex++;
+    if (!isDeleting) {
+        cursorEl.classList.remove('eating');
 
-            if (charIndex === currentPhrase.length) {
-                // Finished typing — pause then delete
-                isDeleting = true;
-                setTimeout(typewrite, pauseAfterType);
-                return;
-            }
-            setTimeout(typewrite, typeSpeed);
-        } else {
-            // Deleting — cursor "eating" effect
-            cursorEl.classList.add('eating');
-            typewriterEl.textContent = currentPhrase.substring(0, charIndex - 1);
-            charIndex--;
+        charIndex++;
+        typewriterEl.textContent = currentPhrase.substring(0, charIndex);
 
-            if (charIndex === 0) {
-                // Finished deleting — move to next phrase
-                isDeleting = false;
-                cursorEl.classList.remove('eating');
-                phraseIndex = (phraseIndex + 1) % phrases.length;
-                setTimeout(typewrite, pauseAfterDelete);
-                return;
-            }
-            setTimeout(typewrite, deleteSpeed);
+        if (charIndex >= currentPhrase.length) {
+            isDeleting = true;
+            setTimeout(typewrite, pauseAfterType);
+            return;
         }
-    }
 
+        setTimeout(typewrite, typeSpeed);
+
+    } else {
+        cursorEl.classList.add('eating');
+
+        charIndex--;
+        typewriterEl.textContent = currentPhrase.substring(0, charIndex);
+
+        if (charIndex <= 0) {
+            charIndex = 0;
+
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            isDeleting = false;
+
+            cursorEl.classList.remove('eating');
+
+            setTimeout(typewrite, pauseAfterDelete);
+            return;
+        }
+
+        setTimeout(typewrite, deleteSpeed);
+    }
+}
     typewrite();
 
 

@@ -1,0 +1,603 @@
+/* ============================================================
+   ParkSmart — Login Page Styles (user-login.css)
+   Scoped to .login-page  — does NOT affect other pages.
+   ============================================================ */
+
+/* ---------- Google Font ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ---------- Reset (login page only) ---------- */
+.login-page,
+.login-page *,
+.login-page *::before,
+.login-page *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ---------- Body override when login page is active ---------- */
+body.login-body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', Arial, sans-serif;
+    overflow-x: hidden;
+    background: #f0f4ff;
+}
+
+/* =============================================================
+   LAYOUT — full-viewport two-column grid
+   ============================================================= */
+.login-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* =============================================================
+   LEFT PANEL — parking hero image + branding
+   ============================================================= */
+.login-left {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 48px 40px;
+
+    /* Animation: slide + fade in from the left */
+    animation: slideInLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Background parking image — NO dark filter, natural colors */
+.login-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('../assets/images/parking-sunset.jpg') left center / cover no-repeat;
+    z-index: 0;
+}
+
+/* Very subtle gradient at bottom only — just enough for text readability */
+.login-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0) 40%,
+        rgba(10, 20, 50, 0.55) 75%,
+        rgba(10, 20, 50, 0.75) 100%
+    );
+    z-index: 1;
+}
+
+/* Left-panel content sits above the overlays */
+.login-left-content {
+    position: relative;
+    z-index: 2;
+    color: #ffffff;
+
+    animation: fadeInUp 0.7s 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- Logo / branding (top-left) ---------- */
+.login-brand {
+    position: absolute;
+    top: 32px;
+    left: 40px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    animation: fadeInUp 0.6s 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-brand-icon {
+    width: 38px;
+    height: 38px;
+    background: #2563eb;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+    color: #fff;
+}
+
+.login-brand-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+/* ---------- Tagline row with P icon ---------- */
+.login-tagline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 4px;
+}
+
+.tagline-p-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    background: #2563eb;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 22px;
+    color: #fff;
+    margin-top: 6px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+/* ---------- Tagline ---------- */
+.login-tagline {
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 800;
+    font-style: italic;
+    line-height: 1.2;
+    color: #ffffff;
+    /* No gradient clip — pure white text like reference */
+}
+
+.login-tagline-sub {
+    font-size: 14px;
+    opacity: 0.85;
+    max-width: 340px;
+    line-height: 1.55;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+/* ---------- Bottom bar ("Park Smart. Live Better.") ---------- */
+.login-bottom-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    animation: fadeInUp 0.6s 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-bottom-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.login-bottom-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.login-bottom-dots span:nth-child(1) { background: #2563eb; }
+.login-bottom-dots span:nth-child(2) { background: #60a5fa; }
+.login-bottom-dots span:nth-child(3) { background: #93c5fd; }
+
+.login-bottom-text {
+    font-size: 13px;
+    opacity: 0.8;
+    letter-spacing: 0.3px;
+}
+
+/* =============================================================
+   RIGHT PANEL — light background + decorative circles + card
+   ============================================================= */
+.login-right {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    background: linear-gradient(160deg, #eef3ff 0%, #dce6fa 40%, #eef3ff 70%, #f5f8ff 100%);
+    overflow: hidden;
+
+    animation: slideInRight 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- Decorative circles (matching reference) ---------- */
+.deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Large light-blue circle — top-right area */
+.deco-circle-lg {
+    width: 320px;
+    height: 320px;
+    background: rgba(37, 99, 235, 0.06);
+    border: 1px solid rgba(37, 99, 235, 0.08);
+    top: -60px;
+    right: -80px;
+    animation: fadeInUp 0.8s 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Small solid blue circle — bottom-right area */
+.deco-circle-sm {
+    width: 22px;
+    height: 22px;
+    background: #a8c4f5;
+    bottom: 40%;
+    right: 32px;
+    animation: fadeInUp 0.6s 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* =============================================================
+   LOGIN CARD — glassmorphism card
+   ============================================================= */
+.login-card {
+    width: min(420px, 100%);
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    padding: 40px 36px 36px;
+    box-shadow:
+        0 8px 32px rgba(37, 99, 235, 0.07),
+        0 1px 4px rgba(0, 0, 0, 0.03);
+    position: relative;
+    z-index: 1;
+
+    animation: cardSlideIn 0.8s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- Card header ---------- */
+.login-card-header {
+    margin-bottom: 28px;
+}
+
+.login-card-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.login-card-brand-text {
+    font-size: 26px;
+    font-weight: 800;
+    color: #172033;
+    letter-spacing: -0.5px;
+}
+
+.login-card-brand-text span {
+    color: #2563eb;
+}
+
+.login-card-brand-icon {
+    width: 36px;
+    height: 36px;
+    color: #2563eb;
+    opacity: 0.7;
+}
+
+.login-card-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #172033;
+    margin: 4px 0 4px;
+}
+
+.login-card-subtitle {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* ---------- Form groups ---------- */
+.login-card .form-group {
+    margin-bottom: 20px;
+    animation: formItemFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-card .form-group:nth-child(1) { animation-delay: 0.55s; }
+.login-card .form-group:nth-child(2) { animation-delay: 0.70s; }
+
+.login-card .form-group label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 7px;
+}
+
+/* ---------- Input wrapper (icon + input) ---------- */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper .input-icon {
+    position: absolute;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+    color: #94a3b8;
+    pointer-events: none;
+    transition: color 0.25s;
+}
+
+.input-wrapper .input {
+    width: 100%;
+    padding: 13px 14px 13px 42px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'Inter', Arial, sans-serif;
+    color: #172033;
+    background: #fff;
+    margin-top: 0;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.input-wrapper .input::placeholder {
+    color: #a0aec0;
+    font-weight: 400;
+}
+
+.input-wrapper .input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.10);
+}
+
+.input-wrapper .input:focus ~ .input-icon {
+    color: #2563eb;
+}
+
+/* ---------- Password toggle ---------- */
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.password-toggle:hover {
+    color: #475569;
+}
+
+/* ---------- Login button — pill shape, solid blue, matching reference ---------- */
+.login-card .btn-primary {
+    width: 48%;
+    padding: 13px 24px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Inter', Arial, sans-serif;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    color: #fff;
+    background: #2563eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    margin-top: 4px;
+
+    animation: formItemFadeIn 0.5s 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-card .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    background: #1d4ed8;
+}
+
+.login-card .btn-primary:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.20);
+}
+
+.login-card .btn-primary .btn-arrow {
+    transition: transform 0.25s;
+}
+
+.login-card .btn-primary:hover .btn-arrow {
+    transform: translateX(3px);
+}
+
+/* ---------- Links below the form ---------- */
+.login-card .login-links {
+    margin-top: 22px;
+    text-align: center;
+    animation: formItemFadeIn 0.5s 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-card .login-links p {
+    font-size: 13.5px;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.login-card .login-links a {
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.login-card .login-links a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.login-card .login-links .back-link {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.login-card .login-links .back-link:hover {
+    color: #2563eb;
+}
+
+/* ---------- Error message ---------- */
+.login-card .message {
+    margin-bottom: 16px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    display: none;
+}
+
+.login-card .message.show {
+    display: block;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* =============================================================
+   KEYFRAME ANIMATIONS
+   ============================================================= */
+
+/* Left panel slides in from the left */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-60px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Right panel slides in from the right */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(60px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Login card slides up + fades in */
+@keyframes cardSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Left-side text fades up */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form items stagger */
+@keyframes formItemFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =============================================================
+   RESPONSIVE — stack on smaller screens
+   ============================================================= */
+@media (max-width: 900px) {
+    .login-page {
+        grid-template-columns: 1fr;
+    }
+
+    .login-left {
+        min-height: 260px;
+        padding: 80px 28px 32px;
+    }
+
+    .login-brand {
+        top: 20px;
+        left: 28px;
+    }
+
+    .login-tagline {
+        font-size: 24px;
+    }
+
+    .tagline-p-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        font-size: 18px;
+    }
+
+    .deco-circle-lg {
+        width: 200px;
+        height: 200px;
+    }
+
+    .deco-circle-sm {
+        display: none;
+    }
+
+    .login-right {
+        padding: 32px 20px 48px;
+    }
+
+    .login-card {
+        padding: 28px 22px 26px;
+    }
+
+    .login-card .btn-primary {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-left {
+        min-height: 200px;
+        padding: 70px 20px 24px;
+    }
+
+    .login-card {
+        padding: 24px 18px 22px;
+    }
+
+    .login-card-brand-text {
+        font-size: 22px;
+    }
+
+    .login-card-title {
+        font-size: 18px;
+    }
+}

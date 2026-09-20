@@ -1,0 +1,625 @@
+/* ============================================================
+   ParkSmart — Register Page Styles (user-register.css)
+   Scoped to .register-page — does NOT affect other pages.
+   ============================================================ */
+
+/* ---------- Google Font ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ---------- Reset (register page only) ---------- */
+.register-page,
+.register-page *,
+.register-page *::before,
+.register-page *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ---------- Body override when register page is active ---------- */
+body.register-body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', Arial, sans-serif;
+    overflow-x: hidden;
+    background: #f0f4ff;
+}
+
+/* =============================================================
+   LAYOUT — full-viewport two-column grid
+   ============================================================= */
+.register-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* =============================================================
+   LEFT PANEL — parking hero image + branding
+   ============================================================= */
+.register-left {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 48px 40px;
+
+    /* Animation: slide + fade in from the left */
+    animation: slideInLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Background parking image — NO dark filter, natural colors (matches login) */
+.register-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('../assets/images/parking-sunset.jpg') left center / cover no-repeat;
+    z-index: 0;
+}
+
+/* Very subtle gradient at bottom only — just enough for text readability */
+.register-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0) 40%,
+        rgba(10, 20, 50, 0.55) 75%,
+        rgba(10, 20, 50, 0.75) 100%
+    );
+    z-index: 1;
+}
+
+/* Left-panel content sits above overlays */
+.register-left-content {
+    position: relative;
+    z-index: 2;
+    color: #ffffff;
+
+    animation: fadeInUp 0.7s 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- Logo / branding (top-left) ---------- */
+.register-brand {
+    position: absolute;
+    top: 32px;
+    left: 40px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    animation: fadeInUp 0.6s 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.register-brand-icon {
+    width: 38px;
+    height: 38px;
+    background: #2563eb;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+    color: #fff;
+}
+
+.register-brand-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+/* ---------- Tagline row with P icon ---------- */
+.register-tagline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 4px;
+}
+
+.tagline-p-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    background: #2563eb;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 22px;
+    color: #fff;
+    margin-top: 6px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+/* ---------- Tagline ---------- */
+.register-tagline {
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 800;
+    font-style: italic;
+    line-height: 1.2;
+    color: #ffffff;
+}
+
+.register-tagline-sub {
+    font-size: 14px;
+    opacity: 0.85;
+    max-width: 340px;
+    line-height: 1.55;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+/* ---------- Bottom bar ("Park Smart. Live Better.") ---------- */
+.register-bottom-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    animation: fadeInUp 0.6s 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.register-bottom-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.register-bottom-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.register-bottom-dots span:nth-child(1) { background: #2563eb; }
+.register-bottom-dots span:nth-child(2) { background: #60a5fa; }
+.register-bottom-dots span:nth-child(3) { background: #93c5fd; }
+
+.register-bottom-text {
+    font-size: 13px;
+    opacity: 0.8;
+    letter-spacing: 0.3px;
+}
+
+/* =============================================================
+   RIGHT PANEL — light background + decorative circles + card
+   Allows smooth vertical scrolling when viewport height is tight
+   ============================================================= */
+.register-right {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 32px;
+    background: linear-gradient(160deg, #eef3ff 0%, #dce6fa 40%, #eef3ff 70%, #f5f8ff 100%);
+    overflow-y: auto;
+    max-height: 100vh;
+
+    animation: slideInRight 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- Decorative circles (matching reference) ---------- */
+.deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.deco-circle-lg {
+    width: 320px;
+    height: 320px;
+    background: rgba(37, 99, 235, 0.06);
+    border: 1px solid rgba(37, 99, 235, 0.08);
+    top: -50px;
+    right: -70px;
+    animation: fadeInUp 0.8s 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.deco-circle-sm {
+    width: 22px;
+    height: 22px;
+    background: #a8c4f5;
+    bottom: 30%;
+    right: 32px;
+    animation: fadeInUp 0.6s 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* =============================================================
+   REGISTER CARD — glassmorphism card with compact vertical rhythm
+   ============================================================= */
+.register-card {
+    width: min(440px, 100%);
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 20px;
+    padding: 28px 32px 24px;
+    box-shadow:
+        0 8px 32px rgba(37, 99, 235, 0.07),
+        0 1px 4px rgba(0, 0, 0, 0.03);
+    position: relative;
+    z-index: 1;
+    margin: auto 0;
+
+    animation: cardSlideIn 0.8s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- Card header ---------- */
+.register-card-header {
+    margin-bottom: 16px;
+}
+
+.register-card-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.register-card-brand-text {
+    font-size: 24px;
+    font-weight: 800;
+    color: #172033;
+    letter-spacing: -0.5px;
+}
+
+.register-card-brand-text span {
+    color: #2563eb;
+}
+
+.register-card-brand-icon {
+    width: 32px;
+    height: 32px;
+    color: #2563eb;
+    opacity: 0.7;
+}
+
+.register-card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #172033;
+    margin: 2px 0;
+}
+
+.register-card-subtitle {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* ---------- Form groups (compact spacing for 5 fields) ---------- */
+.register-card .form-group {
+    margin-bottom: 12px;
+    animation: formItemFadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.register-card .form-group:nth-child(1) { animation-delay: 0.45s; }
+.register-card .form-group:nth-child(2) { animation-delay: 0.52s; }
+.register-card .form-group:nth-child(3) { animation-delay: 0.59s; }
+.register-card .form-group:nth-child(4) { animation-delay: 0.66s; }
+.register-card .form-group:nth-child(5) { animation-delay: 0.73s; }
+
+.register-card .form-group label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 4px;
+}
+
+/* ---------- Input wrapper (icon + input + optional toggle) ---------- */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper .input-icon {
+    position: absolute;
+    left: 13px;
+    width: 17px;
+    height: 17px;
+    color: #94a3b8;
+    pointer-events: none;
+    transition: color 0.25s;
+}
+
+.input-wrapper .input {
+    width: 100%;
+    padding: 10px 14px 10px 39px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-family: 'Inter', Arial, sans-serif;
+    color: #172033;
+    background: #ffffff;
+    margin-top: 0;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s, background-color 0.25s;
+}
+
+.input-wrapper .input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+    font-size: 13px;
+}
+
+.input-wrapper .input:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.12);
+}
+
+.input-wrapper .input:focus ~ .input-icon {
+    color: #2563eb;
+}
+
+/* Input has toggle padding on the right */
+.input-wrapper.has-toggle .input {
+    padding-right: 40px;
+}
+
+/* ---------- Password toggle buttons ---------- */
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.password-toggle:hover {
+    color: #334155;
+}
+
+/* ---------- Register button — modern blue gradient with hover/press animation ---------- */
+.register-card .btn-primary {
+    width: 100%;
+    padding: 11px 24px;
+    font-size: 14.5px;
+    font-weight: 700;
+    font-family: 'Inter', Arial, sans-serif;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s, background 0.2s;
+    margin-top: 6px;
+
+    animation: formItemFadeIn 0.45s 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.register-card .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.38);
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.register-card .btn-primary:active {
+    transform: translateY(0) scale(0.985);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.22);
+}
+
+.register-card .btn-primary .btn-arrow {
+    transition: transform 0.25s;
+}
+
+.register-card .btn-primary:hover .btn-arrow {
+    transform: translateX(3px);
+}
+
+/* ---------- Links below the form ---------- */
+.register-card .register-links {
+    margin-top: 16px;
+    text-align: center;
+    animation: formItemFadeIn 0.45s 0.88s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.register-card .register-links p {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.register-card .register-links a {
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.register-card .register-links a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.register-card .register-links .back-link {
+    font-size: 12.5px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.register-card .register-links .back-link:hover {
+    color: #2563eb;
+}
+
+/* ---------- Error & Alert message ---------- */
+.register-card .message {
+    margin-bottom: 12px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+}
+
+.register-card .message.show {
+    display: block;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    animation: formItemFadeIn 0.3s ease;
+}
+
+/* =============================================================
+   KEYFRAME ANIMATIONS (Exact match to user-login.css)
+   ============================================================= */
+
+/* Left panel slides in from the left */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-60px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Right panel slides in from the right */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(60px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Register card slides up + fades in */
+@keyframes cardSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Left-side text fades up */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form items stagger */
+@keyframes formItemFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =============================================================
+   RESPONSIVE — stack on smaller screens & allow smooth scrolling
+   ============================================================= */
+@media (max-width: 900px) {
+    .register-page {
+        grid-template-columns: 1fr;
+    }
+
+    .register-left {
+        min-height: 240px;
+        padding: 60px 28px 28px;
+    }
+
+    .register-brand {
+        top: 18px;
+        left: 24px;
+    }
+
+    .register-tagline {
+        font-size: 24px;
+    }
+
+    .tagline-p-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        font-size: 18px;
+    }
+
+    .deco-circle-lg {
+        width: 180px;
+        height: 180px;
+    }
+
+    .deco-circle-sm {
+        display: none;
+    }
+
+    .register-right {
+        padding: 24px 18px 40px;
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    .register-card {
+        padding: 24px 20px 22px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .register-left {
+        min-height: 190px;
+        padding: 56px 18px 20px;
+    }
+
+    .register-card {
+        padding: 20px 16px 20px;
+    }
+
+    .register-card-brand-text {
+        font-size: 20px;
+    }
+
+    .register-card-title {
+        font-size: 18px;
+    }
+
+    .input-wrapper .input {
+        padding: 9px 12px 9px 36px;
+        font-size: 13px;
+    }
+
+    .input-wrapper .input-icon {
+        left: 11px;
+        width: 15px;
+        height: 15px;
+    }
+}
