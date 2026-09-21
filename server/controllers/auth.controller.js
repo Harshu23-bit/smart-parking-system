@@ -1304,7 +1304,6 @@ async function loginUser(req, res) {
 
         if (user.role !== "user") {
             return res.status(403).json({
-                status: "error",
                 message: "This account is not a user account."
             });
         }
@@ -1318,6 +1317,127 @@ async function loginUser(req, res) {
             return res.status(401).json({
                 status: "error",
                 message: "Invalid email or password."
+            });
+        }
+
+        const otpResult = await createOtpForUser({
+    userId: user.id,
+    purpose: "login_otp",
+    channel: "email",
+    destination: user.email,
+    userName: user.name
+});
+
+if (!otpResult.success) {
+    if (otpResult.reason === "cooldown") {
+        return res.status(429).json({
+            status: "error",
+            message: `Please wait ${otpResult.retryAfter} seconds before requesting another OTP.`
+        });
+    }
+
+    return res.status(500).json({
+        status: "error",
+        message: "Unable to send login OTP."
+    });
+}
+
+return res.json({
+    status: "success",
+    message: "OTP sent to your registered email.",
+    otp_required: true,
+    email: user.email
+});
+
+} catch (error) {
+    console.error("User login error:", error);
+
+    return res.status(500).json({
+        status: "error",
+        message: "Unable to log in."
+    });
+}
+}
+
+async function verifyLoginOtp(req, res) {
+    const { email, otp } = req.body || {};
+
+    try {
+        if (!email || !otp) {
+            return res.status(400).json({
+                status: "error",
+                message: "Email and OTP are required."
+            });
+        }
+
+        const cleanEmail = String(email).trim().toLowerCase();
+        const cleanOtp = String(otp).trim();
+
+        if (!/^\d{6}$/.test(cleanOtp)) {
+            return res.status(400).json({
+                status: "error",
+                message: "OTP must be 6 digits."
+            });
+        }
+
+        const result = await pool.query(
+            `
+            SELECT
+                id,
+                name,
+                email,
+                phone,
+                role,
+                email_verified,
+                phone_verified,
+                created_at
+            FROM users
+            WHERE email = $1
+            LIMIT 1
+            `,
+            [cleanEmail]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(401).json({
+                status: "error",
+                message: "Invalid OTP."
+            });
+        }
+
+        const user = result.rows[0];
+
+        if (user.role !== "user") {
+            return res.status(403).json({
+                status: "error",
+                message: "This account is not a user account."
+            });
+        }
+
+        const otpResult = await verifyOtpForUser({
+            userId: user.id,
+            otp: cleanOtp,
+            purpose: "login_otp"
+        });
+
+        if (!otpResult.success) {
+            let message = "Invalid OTP.";
+
+            if (otpResult.reason === "expired") {
+                message = "OTP has expired. Please request a new OTP.";
+            }
+
+            if (otpResult.reason === "too_many_attempts") {
+                message = "Too many incorrect attempts. Please request a new OTP.";
+            }
+
+            if (otpResult.reason === "not_found") {
+                message = "OTP not found. Please request a new OTP.";
+            }
+
+            return res.status(401).json({
+                status: "error",
+                message
             });
         }
 
@@ -1350,11 +1470,11 @@ async function loginUser(req, res) {
         });
 
     } catch (error) {
-        console.error("User login error:", error);
+        console.error("Login OTP verification error:", error);
 
         return res.status(500).json({
             status: "error",
-            message: "Unable to log in."
+            message: "Unable to verify login OTP."
         });
     }
 }
@@ -1365,6 +1485,7 @@ module.exports = {
 
     registerUser,
     loginUser,
+    verifyLoginOtp,
 
     getCurrentUser,
     updateCurrentUser,

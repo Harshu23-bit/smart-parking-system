@@ -62,11 +62,22 @@ async function registerUser(data) {
 
 
 async function loginUser(email, password) {
-    const data = await apiRequest("/auth/user/login", {
+    return await apiRequest("/auth/user/login", {
         method: "POST",
         body: JSON.stringify({
             email,
             password
+        })
+    });
+}
+
+
+async function verifyLoginOtp(email, otp) {
+    const data = await apiRequest("/auth/user/verify-login-otp", {
+        method: "POST",
+        body: JSON.stringify({
+            email,
+            otp
         })
     });
 
