@@ -186,6 +186,10 @@ function showOtpVerificationDialog(email) {
     const codeInput =
         document.getElementById('owner-otp-code');
 
+    if (codeInput) {
+        codeInput.value = '';
+    }
+
     const resendButton =
         document.getElementById('owner-resend-otp');
 
@@ -1449,517 +1453,6 @@ function initOwnerAuth() {
 }
 
 // ============================================
-// 7. DEVELOPMENT PARKING LOCATION PRESETS
-// ============================================
-
-const DEVELOPMENT_PARKING_LOCATIONS = {
-
-    "bhayandar-station": {
-        name:
-            "Bhayandar West Railway Station Skywalk Pay & Park",
-
-        address:
-            "Below Skywalk, Bhayandar West Railway Station, Bhayandar West",
-
-        city:
-            "Mira Bhayandar",
-
-        postalCode:
-            "401101",
-
-        latitude:
-            19.310700,
-
-        longitude:
-            72.851000,
-    },
-
-
-    "star-bazaar": {
-        name:
-            "Star Bazaar Pay & Park - Reservation 264A",
-
-        address:
-            "Reservation No. 264A, Near Star Bazaar, Mira Bhayandar",
-
-        city:
-            "Mira Bhayandar",
-
-        postalCode:
-            "401107",
-
-        latitude:
-            19.287900,
-
-        longitude:
-            72.868600,
-    },
-
-
-    "mira-road-station": {
-        name:
-            "Mira Road East Railway Station Pay & Park - Reservation 184",
-
-        address:
-            "Reservation No. 184, Mira Road Railway Station, Mira Road East",
-
-        city:
-            "Mira Bhayandar",
-
-        postalCode:
-            "401107",
-
-        latitude:
-            19.281300,
-
-        longitude:
-            72.856600,
-    },
-
-
-    "mira-road-skywalk": {
-        name:
-            "Mira Road East Skywalk Parallel Road Pay & Park",
-
-        address:
-            "Parallel Road near Mira Road Railway Station Skywalk, Mira Road East",
-
-        city:
-            "Mira Bhayandar",
-
-        postalCode:
-            "401107",
-
-        latitude:
-            19.280900,
-
-        longitude:
-            72.857400,
-    },
-
-
-    "ramdev-park": {
-        name:
-            "Ramdev Park Road Pay & Park - Reservation 245",
-
-        address:
-            "Reservation No. 245, Ramdev Park Road, Mira Road East",
-
-        city:
-            "Mira Bhayandar",
-
-        postalCode:
-            "401107",
-
-        latitude:
-            19.287000,
-
-        longitude:
-            72.875300,
-    },
-
-
-    "navghar": {
-        name:
-            "Navghar Pay & Park - Reservation 301",
-
-        address:
-            "Navghar, Bhayandar East, Mira Bhayandar",
-
-        city:
-            "Mira Bhayandar",
-
-        postalCode:
-            "401105",
-
-        latitude:
-            19.307400,
-
-        longitude:
-            72.865200,
-    },
-
-
-    "bkc-rg2": {
-        name:
-            "MMRDA BKC RG-2 Public Car Parking",
-
-        address:
-            "Plot RG-2, G Block, Bandra Kurla Complex, Bandra East",
-
-        city:
-            "Mumbai",
-
-        postalCode:
-            "400051",
-
-        latitude:
-            19.066600,
-
-        longitude:
-            72.869100,
-    },
-};
-
-// ============================================
-// PARKING LOCATION PRESET UI
-// ============================================
-
-function initParkingLocationPresets() {
-
-    const presetSelect =
-        document.getElementById(
-            "parking-location-preset"
-        );
-
-    if (!presetSelect) {
-        return;
-    }
-
-
-    const nameInput =
-        document.getElementById(
-            "space-name"
-        );
-
-    const addressInput =
-        document.getElementById(
-            "space-address"
-        );
-
-    const cityInput =
-        document.getElementById(
-            "space-city"
-        );
-
-    const zipInput =
-        document.getElementById(
-            "space-zip"
-        );
-
-    const coordinateSection =
-        document.getElementById(
-            "custom-location-coordinates"
-        );
-
-    const latitudeInput =
-        document.getElementById(
-            "space-latitude"
-        );
-
-    const longitudeInput =
-        document.getElementById(
-            "space-longitude"
-        );
-
-
-    // ========================================
-    // READ-ONLY MODE FOR PRESET LOCATIONS
-    // ========================================
-
-    function setLocationFieldsReadOnly(
-        readOnly
-    ) {
-
-        [
-            nameInput,
-            addressInput,
-            cityInput,
-            zipInput,
-        ]
-        .filter(Boolean)
-        .forEach(
-            input => {
-                input.readOnly =
-                    readOnly;
-            }
-        );
-    }
-
-
-    // ========================================
-    // CUSTOM COORDINATE MODE
-    // ========================================
-
-    function setCustomCoordinateMode(
-        enabled
-    ) {
-
-        if (coordinateSection) {
-
-            coordinateSection.style.display =
-                enabled
-                    ? ""
-                    : "none";
-        }
-
-
-        if (latitudeInput) {
-            latitudeInput.required =
-                enabled;
-        }
-
-        if (longitudeInput) {
-            longitudeInput.required =
-                enabled;
-        }
-    }
-
-
-    // ========================================
-    // CLEAR LOCATION VALUES
-    // ========================================
-
-    function clearLocationFields() {
-
-        if (nameInput) {
-            nameInput.value = "";
-        }
-
-        if (addressInput) {
-            addressInput.value = "";
-        }
-
-        if (cityInput) {
-            cityInput.value = "";
-        }
-
-        if (zipInput) {
-            zipInput.value = "";
-        }
-
-        if (latitudeInput) {
-            latitudeInput.value = "";
-        }
-
-        if (longitudeInput) {
-            longitudeInput.value = "";
-        }
-
-
-        pendingParkingLocation.latitude =
-            null;
-
-        pendingParkingLocation.longitude =
-            null;
-    }
-
-
-    // ========================================
-    // APPLY CURRENT PRESET
-    // ========================================
-
-    function applySelectedParkingLocation() {
-
-        const selectedValue =
-            presetSelect.value;
-
-
-        // ------------------------------------
-        // NOTHING SELECTED
-        // ------------------------------------
-
-        if (!selectedValue) {
-
-            clearLocationFields();
-
-            setLocationFieldsReadOnly(
-                false
-            );
-
-            setCustomCoordinateMode(
-                false
-            );
-
-            return;
-        }
-
-
-        // ------------------------------------
-        // CUSTOM PARKING SPACE
-        // ------------------------------------
-
-        if (
-            selectedValue ===
-            "custom"
-        ) {
-
-            clearLocationFields();
-
-            setLocationFieldsReadOnly(
-                false
-            );
-
-            setCustomCoordinateMode(
-                true
-            );
-
-
-            showToast(
-                "Enter your parking address and coordinates manually.",
-                "default"
-            );
-
-
-            nameInput?.focus();
-
-            return;
-        }
-
-
-        // ------------------------------------
-        // DEVELOPMENT PRESET
-        // ------------------------------------
-
-        const location =
-            DEVELOPMENT_PARKING_LOCATIONS[
-                selectedValue
-            ];
-
-
-        if (!location) {
-            return;
-        }
-
-
-        if (nameInput) {
-            nameInput.value =
-                location.name;
-        }
-
-
-        if (addressInput) {
-            addressInput.value =
-                location.address;
-        }
-
-
-        if (cityInput) {
-            cityInput.value =
-                location.city;
-        }
-
-
-        if (zipInput) {
-            zipInput.value =
-                location.postalCode;
-        }
-
-
-        pendingParkingLocation.latitude =
-            location.latitude;
-
-        pendingParkingLocation.longitude =
-            location.longitude;
-
-
-        if (latitudeInput) {
-
-            latitudeInput.value =
-                location.latitude;
-        }
-
-
-        if (longitudeInput) {
-
-            longitudeInput.value =
-                location.longitude;
-        }
-
-
-        setLocationFieldsReadOnly(
-            true
-        );
-
-        setCustomCoordinateMode(
-            false
-        );
-    }
-
-
-    // ========================================
-    // PRESET CHANGE
-    // ========================================
-
-    presetSelect.addEventListener(
-        "change",
-        applySelectedParkingLocation
-    );
-
-
-    // ========================================
-    // MANUAL LATITUDE
-    // ========================================
-
-    latitudeInput?.addEventListener(
-        "input",
-        () => {
-
-            const raw =
-                latitudeInput
-                    .value
-                    .trim();
-
-
-            const value =
-                Number(
-                    raw
-                );
-
-
-            pendingParkingLocation.latitude =
-                raw !== "" &&
-                Number.isFinite(
-                    value
-                )
-                    ? value
-                    : null;
-        }
-    );
-
-
-    // ========================================
-    // MANUAL LONGITUDE
-    // ========================================
-
-    longitudeInput?.addEventListener(
-        "input",
-        () => {
-
-            const raw =
-                longitudeInput
-                    .value
-                    .trim();
-
-
-            const value =
-                Number(
-                    raw
-                );
-
-
-            pendingParkingLocation.longitude =
-                raw !== "" &&
-                Number.isFinite(
-                    value
-                )
-                    ? value
-                    : null;
-        }
-    );
-
-
-    // ========================================
-    // INITIALIZE CURRENT SELECTION
-    //
-    // Important when browser restores
-    // a selected preset after reload.
-    // ========================================
-
-    applySelectedParkingLocation();
-}
-
-// ============================================
 // 8. APPLY FOR RENTING / SPACE DETAILS
 // ============================================
 
@@ -2504,7 +1997,7 @@ function initApplyForm() {
             ) {
 
                 showToast(
-                    "Please select a parking preset or enter valid latitude and longitude coordinates.",
+                    "Please select a valid parking address from the suggestions.",
                     "danger"
                 );
 
@@ -6352,6 +5845,23 @@ async function initOwnerDashboard() {
         );
 
 
+        setInterval(
+            async () => {
+
+                if (
+                    activeOwnerParkingSpace?.id
+                ) {
+
+                    await loadOwnerBookingsForSpace(
+                        activeOwnerParkingSpace.id
+                    );
+                }
+
+            },
+            10000
+        );
+
+
         await loadOwnerOperatingHours(
             selected.id
         );
@@ -6758,97 +6268,6 @@ function initNav() {
 // ============================================
 // 16. GLOBAL INITIALIZATION
 // ============================================
-
-function initOwnerTheme() {
-
-    const root =
-        document.documentElement;
-
-
-    const themeButtons = [
-        document.getElementById(
-            "menu-theme-toggle"
-        ),
-
-        document.getElementById(
-            "dock-theme-toggle"
-        ),
-    ]
-    .filter(Boolean);
-
-
-    const savedTheme =
-        localStorage.getItem(
-            "parksmart_theme"
-        );
-
-
-    const prefersDark =
-        window.matchMedia?.(
-            "(prefers-color-scheme: dark)"
-        ).matches;
-
-
-    const initialTheme =
-        savedTheme ||
-        (
-            prefersDark
-                ? "dark"
-                : "light"
-        );
-
-
-    function applyTheme(theme) {
-
-        root.dataset.theme =
-            theme;
-
-
-        localStorage.setItem(
-            "parksmart_theme",
-            theme
-        );
-
-
-        themeButtons.forEach(
-            button => {
-
-                button.textContent =
-                    theme === "dark"
-                        ? "☀️ Light Mode"
-                        : "🌙 Dark Mode";
-            }
-        );
-    }
-
-
-    applyTheme(
-        initialTheme
-    );
-
-
-    themeButtons.forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const nextTheme =
-                        root.dataset.theme ===
-                        "dark"
-                            ? "light"
-                            : "dark";
-
-
-                    applyTheme(
-                        nextTheme
-                    );
-                }
-            );
-        }
-    );
-}
 
 function initEditParkingSpace() {
 
@@ -8005,6 +7424,466 @@ function initOwnerAccountDock() {
         );
 }
 
+function initOwnerAddressAutocomplete() {
+
+    const addressInput =
+        document.getElementById(
+            "space-address"
+        );
+
+    const suggestionsBox =
+        document.getElementById(
+            "owner-address-suggestions"
+        );
+
+    const cityInput =
+        document.getElementById(
+            "space-city"
+        );
+
+    const zipInput =
+        document.getElementById(
+            "space-zip"
+        );
+
+    const latitudeInput =
+        document.getElementById(
+            "space-latitude"
+        );
+
+    const longitudeInput =
+        document.getElementById(
+            "space-longitude"
+        );
+
+
+    if (
+        !addressInput ||
+        !suggestionsBox
+    ) {
+        return;
+    }
+
+
+    let debounceTimer;
+
+
+    function clearSelectedLocation() {
+
+        pendingParkingLocation.latitude =
+            null;
+
+        pendingParkingLocation.longitude =
+            null;
+
+
+        if (latitudeInput) {
+            latitudeInput.value = "";
+        }
+
+        if (longitudeInput) {
+            longitudeInput.value = "";
+        }
+    }
+
+
+    addressInput.addEventListener(
+        "input",
+        () => {
+
+            clearTimeout(
+                debounceTimer
+            );
+
+
+            clearSelectedLocation();
+
+
+            const query =
+                addressInput
+                    .value
+                    .trim();
+
+
+            if (query.length < 3) {
+
+                suggestionsBox.innerHTML =
+                    "";
+
+                suggestionsBox.classList
+                    .remove("visible");
+
+                return;
+            }
+
+
+            debounceTimer =
+                setTimeout(
+                    async () => {
+
+                        try {
+
+                            const response =
+                                await fetch(
+                                    `/api/location/autocomplete?q=${
+                                        encodeURIComponent(
+                                            query
+                                        )
+                                    }`
+                                );
+
+
+                            const data =
+                                await response.json();
+
+
+                            if (
+                                !response.ok
+                            ) {
+                                throw new Error(
+                                    data.message
+                                );
+                            }
+
+
+                            renderSuggestions(
+                                data.suggestions || []
+                            );
+
+
+                        } catch (error) {
+
+                            console.error(
+                                "Address autocomplete error:",
+                                error
+                            );
+                        }
+
+                    },
+                    300
+                );
+        }
+    );
+
+
+    function renderSuggestions(
+        suggestions
+    ) {
+
+        if (!suggestions.length) {
+
+            suggestionsBox
+                .classList
+                .remove("visible");
+
+            suggestionsBox.innerHTML =
+                "";
+
+            return;
+        }
+
+
+        suggestionsBox.innerHTML =
+            suggestions
+                .map(
+                    (item, index) => `
+
+                        <button
+                            type="button"
+                            class="suggestion-item"
+                            data-index="${index}"
+                        >
+                            <span class="suggestion-icon">
+                                📍
+                            </span>
+
+                            <span>
+                                ${escapeHtml(
+                                    item.formatted
+                                )}
+                            </span>
+                        </button>
+
+                    `
+                )
+                .join("");
+
+
+        suggestionsBox.classList
+            .add("visible");
+
+
+        suggestionsBox
+            .querySelectorAll(
+                ".suggestion-item"
+            )
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const item =
+                            suggestions[
+                                Number(
+                                    button.dataset.index
+                                )
+                            ];
+
+
+                        addressInput.value =
+                            item.formatted;
+
+
+                        if (cityInput) {
+                            cityInput.value =
+                                item.city || "";
+                        }
+
+
+                        if (zipInput) {
+                            zipInput.value =
+                                item.postal_code || "";
+                        }
+
+
+                        pendingParkingLocation.latitude =
+                            item.latitude;
+
+                        pendingParkingLocation.longitude =
+                            item.longitude;
+
+
+                        if (latitudeInput) {
+                            latitudeInput.value =
+                                item.latitude;
+                        }
+
+
+                        if (longitudeInput) {
+                            longitudeInput.value =
+                                item.longitude;
+                        }
+
+
+                        suggestionsBox.innerHTML =
+                            "";
+
+                        suggestionsBox.classList
+                            .remove("visible");
+                    }
+                );
+            });
+    }
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            if (
+                !addressInput.contains(
+                    event.target
+                ) &&
+                !suggestionsBox.contains(
+                    event.target
+                )
+            ) {
+
+                suggestionsBox.classList
+                    .remove("visible");
+            }
+        }
+    );
+}
+
+function initOwnerDashboardAnimations() {
+
+    const dashboard =
+        document.querySelector(
+            ".owner-dashboard-root"
+        );
+
+
+    if (!dashboard) {
+        return;
+    }
+
+
+    const animatedElements =
+        document.querySelectorAll(
+            [
+                ".dashboard-header-bar",
+                ".metric-card",
+                ".panel-card"
+            ].join(",")
+        );
+
+
+    animatedElements.forEach(
+        element => {
+
+            element.classList.add(
+                "owner-reveal"
+            );
+        }
+    );
+
+
+    if (
+        !("IntersectionObserver" in window)
+    ) {
+
+        animatedElements.forEach(
+            element => {
+
+                element.classList.add(
+                    "owner-visible"
+                );
+            }
+        );
+
+        return;
+    }
+
+
+    const observer =
+        new IntersectionObserver(
+            entries => {
+
+                entries.forEach(
+                    entry => {
+
+                        if (
+                            !entry.isIntersecting
+                        ) {
+                            return;
+                        }
+
+
+                        entry.target.classList.add(
+                            "owner-visible"
+                        );
+
+
+                        observer.unobserve(
+                            entry.target
+                        );
+                    }
+                );
+            },
+            {
+                threshold:
+                    0.08,
+
+                rootMargin:
+                    "0px 0px -40px 0px"
+            }
+        );
+
+
+    animatedElements.forEach(
+        element => {
+
+            observer.observe(
+                element
+            );
+        }
+    );
+}
+
+function animateDashboardNumber(
+    element,
+    target,
+    {
+        prefix = "",
+        suffix = "",
+        decimals = 0
+    } = {}
+) {
+
+    if (!element) {
+        return;
+    }
+
+
+    const finalValue =
+        Number(target);
+
+
+    if (
+        !Number.isFinite(
+            finalValue
+        )
+    ) {
+        return;
+    }
+
+
+    const duration =
+        700;
+
+
+    const startTime =
+        performance.now();
+
+
+    function update(
+        currentTime
+    ) {
+
+        const progress =
+            Math.min(
+                (
+                    currentTime -
+                    startTime
+                ) /
+                duration,
+                1
+            );
+
+
+        /*
+         * Ease-out animation.
+         */
+
+        const eased =
+            1 -
+            Math.pow(
+                1 - progress,
+                3
+            );
+
+
+        const value =
+            finalValue *
+            eased;
+
+
+        element.textContent =
+            `${prefix}${
+                value.toFixed(
+                    decimals
+                )
+            }${suffix}`;
+
+
+        if (
+            progress < 1
+        ) {
+
+            requestAnimationFrame(
+                update
+            );
+        }
+    }
+
+
+    requestAnimationFrame(
+        update
+    );
+}
+
 document.addEventListener(
     'DOMContentLoaded',
     async () => {
@@ -8032,17 +7911,17 @@ document.addEventListener(
             return;
         }
 
-        initOwnerTheme();
-
         initDashboardMenu();
 
-        initEditParkingSpace();
+        initOwnerDashboardAnimations();
 
-        initParkingLocationPresets();
+        initEditParkingSpace();
 
         initApplyForm();
 
         initOwnerBookingFilters();
+
+        initOwnerAddressAutocomplete();
 
         initOwnerBookingActions();
 

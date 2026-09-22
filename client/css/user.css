@@ -2,185 +2,632 @@
     box-sizing: border-box;
 }
 
+
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f5f7fb;
-    color: #172033;
+
+    font-family:
+        Arial,
+        sans-serif;
+
+    background:
+        #f5f7fb;
+
+    color:
+        #172033;
 }
 
+
 a {
-    color: #2563eb;
-    text-decoration: none;
+    color:
+        #2563eb;
+
+    text-decoration:
+        none;
 }
+
+
+/* =====================================================
+NAVBAR
+===================================================== */
 
 .navbar {
     height: 70px;
-    background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 6%;
+
+    background:
+        #ffffff;
+
+    border-bottom:
+        1px solid #e5e7eb;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    padding:
+        0 6%;
 }
+
 
 .logo {
-    font-size: 24px;
-    font-weight: 800;
+    font-size:
+        24px;
+
+    font-weight:
+        800;
 }
+
 
 .nav-links {
-    display: flex;
-    gap: 24px;
-    align-items: center;
+    display:
+        flex;
+
+    gap:
+        24px;
+
+    align-items:
+        center;
 }
+
+
+/* =====================================================
+GENERAL LAYOUT
+===================================================== */
 
 .container {
-    width: min(1150px, 92%);
-    margin: 40px auto;
+    width:
+        min(1150px, 92%);
+
+    margin:
+        40px auto;
 }
+
 
 .card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 8px 30px rgba(0,0,0,.05);
+    background:
+        #ffffff;
+
+    border-radius:
+        16px;
+
+    padding:
+        24px;
+
+    border:
+        1px solid #e5e7eb;
+
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.05);
 }
+
+
+/* =====================================================
+BUTTONS
+===================================================== */
 
 .btn {
-    border: 0;
-    border-radius: 10px;
-    padding: 12px 20px;
-    cursor: pointer;
-    font-weight: 700;
+    border:
+        0;
+
+    border-radius:
+        10px;
+
+    padding:
+        12px 20px;
+
+    cursor:
+        pointer;
+
+    font-weight:
+        700;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
+
+
+.btn:hover {
+    transform:
+        translateY(-1px);
+}
+
+
+.btn:disabled {
+    cursor:
+        not-allowed;
+
+    opacity:
+        0.65;
+
+    transform:
+        none;
+}
+
 
 .btn-primary {
-    background: #2563eb;
-    color: white;
+    background:
+        #2563eb;
+
+    color:
+        #ffffff;
 }
 
-.btn-danger {
-    background: #dc2626;
-    color: white;
+
+.btn-primary:hover {
+    background:
+        #1d4ed8;
 }
+
+
+.btn-danger {
+    background:
+        #dc2626;
+
+    color:
+        #ffffff;
+}
+
+
+.btn-danger:hover {
+    background:
+        #b91c1c;
+}
+
+
+/* =====================================================
+INPUTS
+===================================================== */
 
 .input,
 select {
-    width: 100%;
-    padding: 13px;
-    border: 1px solid #d1d5db;
-    border-radius: 10px;
-    margin-top: 6px;
+    width:
+        100%;
+
+    padding:
+        13px;
+
+    border:
+        1px solid #d1d5db;
+
+    border-radius:
+        10px;
+
+    margin-top:
+        6px;
+
+    background:
+        #ffffff;
+
+    color:
+        #172033;
+
+    font-size:
+        15px;
+
+    outline:
+        none;
 }
+
+
+.input:focus,
+select:focus {
+    border-color:
+        #2563eb;
+
+    box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
 
 .form-group {
-    margin-bottom: 16px;
+    margin-bottom:
+        16px;
 }
+
+
+/* =====================================================
+AUTH
+===================================================== */
 
 .auth-wrapper {
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 20px;
+    min-height:
+        100vh;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    padding:
+        20px;
 }
+
 
 .auth-card {
-    width: min(430px, 100%);
+    width:
+        min(430px, 100%);
 }
+
 
 .auth-card h1 {
-    margin-top: 0;
+    margin-top:
+        0;
 }
+
 
 .message {
-    margin-bottom: 15px;
-    padding: 10px;
-    border-radius: 8px;
-    display: none;
+    margin-bottom:
+        15px;
+
+    padding:
+        10px;
+
+    border-radius:
+        8px;
+
+    display:
+        none;
 }
+
 
 .message.show {
-    display: block;
-    background: #fee2e2;
-    color: #991b1b;
+    display:
+        block;
+
+    background:
+        #fee2e2;
+
+    color:
+        #991b1b;
 }
+
+
+/* =====================================================
+PARKING SEARCH
+===================================================== */
 
 .search-box {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr auto;
-    gap: 12px;
-    align-items: end;
+    display:
+        grid;
+
+    grid-template-columns:
+        2fr 1fr 1fr 1fr auto;
+
+    gap:
+        12px;
+
+    align-items:
+        end;
 }
+
+
+/* =====================================================
+LOCATION / DESTINATION
+===================================================== */
+
+.destination-field {
+    min-width:
+        0;
+}
+
+
+.address-autocomplete-wrapper {
+    position:
+        relative;
+
+    width:
+        100%;
+}
+
+
+.address-suggestions-dropdown {
+    position:
+        absolute;
+
+    top:
+        calc(100% + 4px);
+
+    left:
+        0;
+
+    right:
+        0;
+
+    display:
+        none;
+
+    max-height:
+        280px;
+
+    overflow-y:
+        auto;
+
+    background:
+        #ffffff;
+
+    border:
+        1px solid #d1d5db;
+
+    border-radius:
+        10px;
+
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.12);
+
+    z-index:
+        1000;
+}
+
+
+.address-suggestions-dropdown.visible {
+    display:
+        block;
+}
+
+
+.suggestion-item {
+    width:
+        100%;
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        10px;
+
+    padding:
+        12px 14px;
+
+    background:
+        #ffffff;
+
+    color:
+        #172033;
+
+    border:
+        0;
+
+    border-bottom:
+        1px solid #e5e7eb;
+
+    text-align:
+        left;
+
+    line-height:
+        1.4;
+
+    cursor:
+        pointer;
+
+    font-size:
+        14px;
+}
+
+
+.suggestion-item:last-child {
+    border-bottom:
+        0;
+}
+
+
+.suggestion-item:hover {
+    background:
+        #f5f7fb;
+}
+
+
+.suggestion-icon {
+    flex-shrink:
+        0;
+
+    margin-top:
+        1px;
+}
+
+
+.btn-location {
+    width:
+        100%;
+
+    margin-top:
+        8px;
+
+    background:
+        #eef2ff;
+
+    color:
+        #172033;
+
+    border:
+        1px solid #dbe3f0;
+
+    padding:
+        10px 12px;
+
+    font-size:
+        13px;
+}
+
+
+.btn-location:hover {
+    background:
+        #e0e7ff;
+}
+
+
+/* =====================================================
+PARKING RESULTS
+===================================================== */
 
 .parking-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 25px;
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap:
+        20px;
+
+    margin-top:
+        25px;
 }
+
 
 .parking-card {
-    overflow: hidden;
+    overflow:
+        hidden;
 }
+
 
 .parking-image {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-radius: 12px;
+    width:
+        100%;
+
+    height:
+        180px;
+
+    object-fit:
+        cover;
+
+    border-radius:
+        12px;
 }
+
 
 .price {
-    font-size: 22px;
-    font-weight: 800;
+    font-size:
+        22px;
+
+    font-weight:
+        800;
 }
+
 
 .available {
-    color: #16a34a;
-    font-weight: 700;
+    color:
+        #16a34a;
+
+    font-weight:
+        700;
 }
+
+
+/* =====================================================
+BOOKING
+===================================================== */
 
 .booking-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
+    display:
+        grid;
+
+    grid-template-columns:
+        2fr 1fr;
+
+    gap:
+        25px;
 }
+
+
+/* =====================================================
+UTILITIES
+===================================================== */
 
 .flex {
-    display: flex;
-    gap: 12px;
-    align-items: center;
+    display:
+        flex;
+
+    gap:
+        12px;
+
+    align-items:
+        center;
 }
+
 
 .space-between {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
 }
+
 
 .badge {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 20px;
-    background: #dcfce7;
-    color: #166534;
-    font-size: 13px;
-    font-weight: 700;
+    display:
+        inline-block;
+
+    padding:
+        5px 10px;
+
+    border-radius:
+        20px;
+
+    background:
+        #dcfce7;
+
+    color:
+        #166534;
+
+    font-size:
+        13px;
+
+    font-weight:
+        700;
 }
 
+
+/* =====================================================
+RESPONSIVE
+===================================================== */
+
 @media (max-width: 850px) {
+
     .search-box,
     .booking-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr;
     }
+
 
     .parking-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr;
     }
 
+
     .nav-links {
-        gap: 10px;
+        gap:
+            10px;
+    }
+
+
+    .navbar {
+        height:
+            auto;
+
+        padding-top:
+            16px;
+
+        padding-bottom:
+            16px;
+
+        gap:
+            16px;
     }
 }
