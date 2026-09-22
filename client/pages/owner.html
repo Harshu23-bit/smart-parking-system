@@ -40,10 +40,142 @@
                 <li id="nav-item-dashboard" style="display: none;"><a href="owner-dashboard.html" class="nav-link" style="color: var(--accent); font-weight: 700;">Active Control Panel ⚡</a></li>
             </ul>
 
-            <div class="nav-actions" id="nav-actions-container">
-                <a href="#auth-section" class="btn-ghost" id="btn-owner-nav-login">Sign In</a>
-                <a href="owner-dashboard.html" class="btn-primary" id="btn-owner-nav-dash" style="display: none;">Go to Dashboard →</a>
-                <div class="nav-owner-profile" id="nav-owner-profile" style="display: none;"></div>
+            <div
+                class="nav-actions"
+                id="nav-actions-container"
+            >
+
+                <a
+                    href="#auth-section"
+                    class="btn-ghost"
+                    id="btn-owner-nav-login"
+                >
+                    Sign In
+                </a>
+
+
+                <div
+                    id="nav-owner-profile"
+                    class="owner-navbar-account"
+                    style="display:none;"
+                >
+
+                    <button
+                        type="button"
+                        id="owner-navbar-account-button"
+                        class="owner-navbar-account-button"
+                        aria-label="Open owner account menu"
+                        aria-expanded="false"
+                    >
+
+                        <span
+                            id="owner-navbar-avatar"
+                            class="owner-navbar-avatar"
+                        >
+                            SO
+                        </span>
+
+                    </button>
+
+
+                    <div
+                        id="owner-navbar-account-menu"
+                        class="owner-navbar-account-menu"
+                    >
+
+                        <div class="owner-menu-profile">
+
+                            <div
+                                id="owner-navbar-menu-avatar"
+                                class="owner-menu-profile-avatar"
+                            >
+                                SO
+                            </div>
+
+                            <div class="owner-menu-profile-text">
+
+                                <strong
+                                    id="owner-navbar-menu-name"
+                                >
+                                    Parking Owner
+                                </strong>
+
+                                <span>
+                                    ParkSmart Owner
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="owner-menu-divider"></div>
+
+
+                        <a
+                            href="owner-dashboard.html"
+                            class="owner-menu-item"
+                        >
+                            <span>▦</span>
+                            <span>Dashboard</span>
+                        </a>
+
+
+                        <a
+                            href="owner-dashboard.html#owner-site-toolbar"
+                            class="owner-menu-item"
+                        >
+                            <span>🅿</span>
+                            <span>Sites</span>
+                        </a>
+
+
+                        <a
+                            href="owner-dashboard.html?account=profile"
+                            class="owner-menu-item"
+                        >
+                            <span>◉</span>
+                            <span>Profile</span>
+                        </a>
+
+
+                        <a
+                            href="#apply-section"
+                            class="owner-menu-item"
+                        >
+                            <span>＋</span>
+                            <span>List New Site</span>
+                        </a>
+
+
+                        <div class="owner-menu-divider"></div>
+
+
+                        <a
+                            href="owner-dashboard.html?account=settings"
+                            class="owner-menu-item"
+                        >
+                            <span>⚙</span>
+                            <span>Account Settings</span>
+                        </a>
+
+
+                        <div class="owner-menu-divider"></div>
+
+
+                        <button
+                            type="button"
+                            id="owner-navbar-sign-out"
+                            class="owner-menu-item menu-danger"
+                        >
+                            <span>↪</span>
+                            <span>Log out</span>
+                        </button>
+
+                    </div>
+
+                </div>
+
             </div>
 
             <button class="hamburger" id="hamburger" aria-label="Toggle menu">
