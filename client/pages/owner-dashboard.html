@@ -40,58 +40,200 @@
                 <li><a href="#panel-availability" class="nav-link">Availability</a></li>
                 <li><a href="#panel-pricing" class="nav-link">Pricing</a></li>
                 <li><a href="#panel-bookings" class="nav-link">Bookings</a></li>
-                <li class="dashboard-nav-menu">
+            </ul>
+
+            <!-- ======================================== -->
+            <!-- OWNER ACCOUNT CONTROL -->
+            <!-- ======================================== -->
+
+            <div class="owner-notification-wrapper">
 
                 <button
                     type="button"
-                    id="dashboard-more-btn"
-                    class="dashboard-nav-more-btn"
-                    aria-label="Dashboard options"
+                    id="owner-notification-button"
+                    class="owner-notification-button"
+                    aria-label="Open notifications"
                     aria-expanded="false"
                 >
-                    ⋮
+
+                    <span class="owner-notification-icon">
+                        🔔
+                    </span>
+
+                    <span
+                        id="owner-notification-count"
+                        class="owner-notification-count"
+                        style="display:none;"
+                    >
+                        0
+                    </span>
+
                 </button>
 
 
                 <div
-                    id="dashboard-more-menu"
-                    class="dashboard-more-menu"
+                    id="owner-notification-menu"
+                    class="owner-notification-menu"
                 >
+
+                    <div class="owner-notification-header">
+
+                        <div>
+                            <strong>
+                                Notifications
+                            </strong>
+
+                            <span>
+                                Recent facility activity
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="owner-notification-list"
+                        class="owner-notification-list"
+                    >
+
+                        <div class="owner-notification-empty">
+                            No new notifications.
+                        </div>
+
+                    </div>
+
+
+                    <a
+                        href="#panel-bookings"
+                        class="owner-notification-footer"
+                    >
+                        View all bookings
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div
+                id="owner-account-dock"
+                class="owner-account-dock owner-account-navbar"
+            >
+
+                <button
+                    type="button"
+                    id="owner-account-button"
+                    class="owner-account-button"
+                    aria-label="Open owner account menu"
+                    aria-expanded="false"
+                >
+
+                    <div
+                        id="dock-owner-avatar"
+                        class="owner-dock-avatar"
+                    >
+                        HM
+                    </div>
+
+                </button>
+
+
+                <div
+                    id="owner-account-menu"
+                    class="owner-account-menu"
+                >
+
+                    <!-- OWNER IDENTITY -->
+                    <div class="owner-menu-profile">
+
+                        <div
+                            id="owner-menu-avatar"
+                            class="owner-menu-profile-avatar"
+                        >
+                            HM
+                        </div>
+
+                        <div class="owner-menu-profile-text">
+
+                            <strong id="owner-menu-name">
+                                Parking Owner
+                            </strong>
+
+                            <span>
+                                ParkSmart Owner Portal
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="owner-menu-divider"></div>
+
 
                     <button
                         type="button"
-                        id="menu-edit-space"
+                        id="dock-profile"
+                        class="owner-menu-item"
                     >
-                        ✏️ Edit Space Details
+                        <span>◉</span>
+                        <span>Owner Profile</span>
                     </button>
 
 
                     <button
                         type="button"
-                        id="menu-theme-toggle"
+                        id="menu-edit-space"
+                        class="owner-menu-item"
                     >
-                        🌙 Dark Mode
+                        <span>✎</span>
+                        <span>Edit Current Facility</span>
                     </button>
 
 
                     <a
                         href="/pages/owner.html#apply-section"
+                        class="owner-menu-item"
                     >
-                        ➕ List Another Space
+                        <span>＋</span>
+                        <span>List Another Space</span>
                     </a>
 
 
                     <button
                         type="button"
-                        id="menu-owner-settings"
+                        id="dock-account-settings"
+                        class="owner-menu-item"
                     >
-                        ⚙️ Owner Settings
+                        <span>⚙</span>
+                        <span>Account Settings</span>
+                    </button>
+
+
+                    <div class="owner-menu-divider"></div>
+
+
+                    <button
+                        type="button"
+                        id="dock-help"
+                        class="owner-menu-item"
+                    >
+                        <span>?</span>
+                        <span>Help</span>
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="dock-sign-out"
+                        class="owner-menu-item menu-danger"
+                    >
+                        <span>↪</span>
+                        <span>Sign Out</span>
                     </button>
 
                 </div>
 
-            </li>
-            </ul>
+            </div>
 
             <button class="hamburger" id="hamburger" aria-label="Toggle menu">
                 <span></span><span></span><span></span>
@@ -117,25 +259,37 @@
                             margin-bottom:10px;
                         "
                     >
-                        <label
-                            for="dashboard-space-selector"
-                            style="
-                                font-size:0.8rem;
-                                font-weight:700;
-                            "
+                        <div
+                            id="owner-site-toolbar"
+                            class="owner-site-toolbar"
                         >
-                            Parking Space:
-                        </label>
 
-                        <select
-                            id="dashboard-space-selector"
-                            class="input-control"
-                            style="
-                                width:auto;
-                                min-width:260px;
-                            "
-                        >
-                        </select>
+                            <span class="owner-site-label">
+                                Current Facility
+                            </span>
+
+                            <button
+                                type="button"
+                                id="owner-switch-site-button"
+                                class="owner-switch-site-button"
+                            >
+                                <span id="owner-switch-site-name">
+                                    Loading site...
+                                </span>
+
+                                <span>
+                                    ▾
+                                </span>
+                            </button>
+
+
+                            <div
+                                id="owner-site-switcher"
+                                class="owner-site-switcher"
+                            ></div>
+
+                        </div>
+
                     </div>
 
                     <div class="owner-space-title-row">
@@ -144,9 +298,18 @@
                             Loading parking space...
                         </h1>
 
-                        <div class="owner-live-chip">
-                            <span class="owner-live-dot"></span>
-                            LIVE
+                        <div
+                            id="owner-live-chip"
+                            class="owner-live-chip"
+                        >
+                            <span
+                                id="owner-live-dot"
+                                class="owner-live-dot"
+                            ></span>
+
+                            <span id="owner-live-text">
+                                LIVE
+                            </span>
                         </div>
 
                     </div>
@@ -265,6 +428,185 @@
                         </svg>
                     </div>
                 </div>
+            </section>
+
+
+            <section
+                id="owner-operations-overview"
+                class="owner-operations-overview"
+            >
+
+                <!-- SITE HEALTH -->
+                <div class="panel-card owner-site-health-card">
+
+                    <div class="owner-panel-heading">
+
+                        <div>
+                            <span class="owner-panel-eyebrow">
+                                OPERATIONS
+                            </span>
+
+                            <h2>
+                                Site Health
+                            </h2>
+                        </div>
+
+                        <span
+                            id="site-health-status"
+                            class="site-health-badge"
+                        >
+                            Checking...
+                        </span>
+
+                    </div>
+
+
+                    <div class="site-health-list">
+
+                        <div class="site-health-row">
+
+                            <div class="site-health-row-left">
+                                <span
+                                    id="health-availability-dot"
+                                    class="health-dot"
+                                ></span>
+
+                                <div>
+                                    <strong>
+                                        Reservation Status
+                                    </strong>
+
+                                    <small
+                                        id="health-availability-text"
+                                    >
+                                        Checking...
+                                    </small>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <div class="site-health-row">
+
+                            <div class="site-health-row-left">
+
+                                <span
+                                    id="health-capacity-dot"
+                                    class="health-dot"
+                                ></span>
+
+                                <div>
+                                    <strong>
+                                        Capacity
+                                    </strong>
+
+                                    <small
+                                        id="health-capacity-text"
+                                    >
+                                        Checking...
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="site-health-row">
+
+                            <div class="site-health-row-left">
+
+                                <span
+                                    id="health-location-dot"
+                                    class="health-dot"
+                                ></span>
+
+                                <div>
+                                    <strong>
+                                        Location
+                                    </strong>
+
+                                    <small
+                                        id="health-location-text"
+                                    >
+                                        Checking...
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="site-health-row">
+
+                            <div class="site-health-row-left">
+
+                                <span
+                                    id="health-pricing-dot"
+                                    class="health-dot"
+                                ></span>
+
+                                <div>
+                                    <strong>
+                                        Pricing
+                                    </strong>
+
+                                    <small
+                                        id="health-pricing-text"
+                                    >
+                                        Checking...
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- RECENT ACTIVITY -->
+                <div class="panel-card owner-activity-card">
+
+                    <div class="owner-panel-heading">
+
+                        <div>
+                            <span class="owner-panel-eyebrow">
+                                LIVE FEED
+                            </span>
+
+                            <h2>
+                                Recent Activity
+                            </h2>
+                        </div>
+
+                        <span
+                            id="owner-activity-count"
+                            class="space-select-pill"
+                        >
+                            0 Events
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        id="owner-activity-list"
+                        class="owner-activity-list"
+                    >
+
+                        <div class="owner-activity-empty">
+                            No recent activity yet.
+                        </div>
+
+                    </div>
+
+                </div>
+
             </section>
 
 
@@ -1471,12 +1813,22 @@
                                     Address
                                 </label>
 
-                                <input
-                                    id="edit-space-address"
-                                    class="input-control"
-                                    type="text"
-                                    required
-                                >
+                                <div class="address-autocomplete-wrapper">
+
+                                    <input
+                                        id="edit-space-address"
+                                        class="input-control"
+                                        type="text"
+                                        autocomplete="off"
+                                        required
+                                    >
+
+                                    <div
+                                        id="edit-address-suggestions"
+                                        class="address-suggestions-dropdown"
+                                    ></div>
+
+                                </div>
                             </div>
 
 
@@ -1489,6 +1841,7 @@
                                     id="edit-space-city"
                                     class="input-control"
                                     type="text"
+                                    readonly
                                 >
                             </div>
 
@@ -1502,6 +1855,7 @@
                                     id="edit-space-postal-code"
                                     class="input-control"
                                     type="text"
+                                    readonly
                                 >
                             </div>
 
@@ -1543,10 +1897,7 @@
 
                                 <input
                                     id="edit-space-latitude"
-                                    class="input-control"
-                                    type="number"
-                                    step="any"
-                                    required
+                                    type="hidden"
                                 >
                             </div>
 
@@ -1558,10 +1909,7 @@
 
                                 <input
                                     id="edit-space-longitude"
-                                    class="input-control"
-                                    type="number"
-                                    step="any"
-                                    required
+                                    type="hidden"
                                 >
                             </div>
 
@@ -1588,6 +1936,20 @@
 
                                 <input
                                     id="edit-standard-bays"
+                                    class="input-control"
+                                    type="number"
+                                    min="0"
+                                >
+                            </div>
+
+
+                            <div>
+                                <label for="edit-compact-bays">
+                                    Compact Car Bays
+                                </label>
+
+                                <input
+                                    id="edit-compact-bays"
                                     class="input-control"
                                     type="number"
                                     min="0"
@@ -1885,121 +2247,6 @@
                     </form>
 
                 </div>
-            </div>
-
-            <!-- ======================================== -->
-            <!-- OWNER ACCOUNT CONTROL -->
-            <!-- ======================================== -->
-
-            <div
-                id="owner-account-dock"
-                class="owner-account-dock"
-            >
-
-                <button
-                    type="button"
-                    id="owner-account-button"
-                    class="owner-account-button"
-                    aria-label="Open owner account menu"
-                    aria-expanded="false"
-                >
-
-                    <div
-                        id="dock-owner-avatar"
-                        class="owner-dock-avatar"
-                    >
-                        HM
-                    </div>
-
-                </button>
-
-
-                <div
-                    id="owner-account-menu"
-                    class="owner-account-menu"
-                >
-
-                    <!-- OWNER IDENTITY -->
-                    <div class="owner-menu-profile">
-
-                        <div
-                            id="owner-menu-avatar"
-                            class="owner-menu-profile-avatar"
-                        >
-                            HM
-                        </div>
-
-                        <div class="owner-menu-profile-text">
-
-                            <strong id="owner-menu-name">
-                                Parking Owner
-                            </strong>
-
-                            <span>
-                                ParkSmart Owner Portal
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="owner-menu-divider"></div>
-
-
-                    <button
-                        type="button"
-                        id="dock-profile"
-                        class="owner-menu-item"
-                    >
-                        <span>◉</span>
-                        <span>Owner Profile</span>
-                    </button>
-
-
-                    <a
-                        href="/pages/owner.html#apply-section"
-                        class="owner-menu-item"
-                    >
-                        <span>＋</span>
-                        <span>List Another Space</span>
-                    </a>
-
-
-                    <button
-                        type="button"
-                        id="dock-account-settings"
-                        class="owner-menu-item"
-                    >
-                        <span>⚙</span>
-                        <span>Account Settings</span>
-                    </button>
-
-
-                    <div class="owner-menu-divider"></div>
-
-
-                    <button
-                        type="button"
-                        id="dock-help"
-                        class="owner-menu-item"
-                    >
-                        <span>?</span>
-                        <span>Help</span>
-                    </button>
-
-
-                    <button
-                        type="button"
-                        id="dock-sign-out"
-                        class="owner-menu-item menu-danger"
-                    >
-                        <span>↪</span>
-                        <span>Sign Out</span>
-                    </button>
-
-                </div>
-
             </div>
 
     <script src="../js/api.js"></script>
