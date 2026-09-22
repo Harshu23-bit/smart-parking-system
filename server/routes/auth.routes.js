@@ -6,6 +6,7 @@ const {
 
     registerUser,
     loginUser,
+    verifyLoginOtp,
 
     getCurrentUser,
     updateCurrentUser,
@@ -25,6 +26,11 @@ router.post("/login", loginOwner);
 
 router.post("/user/register", registerUser);
 router.post("/user/login", loginUser);
+
+router.post(
+    "/user/verify-login-otp",
+    verifyLoginOtp
+);
 
 
 router.post(
