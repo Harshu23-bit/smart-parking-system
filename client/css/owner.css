@@ -23,31 +23,6 @@ Matches ParkSmart Premium Navy & White Theme
     color-scheme: light;
 }
 
-html[data-theme="dark"] {
-    --page-bg: #0d1117;
-
-    --surface-primary: #161b22;
-    --surface-secondary: #21262d;
-
-    --text-primary: #f0f3f6;
-    --text-secondary: #b1bac4;
-    --text-muted: #8c959f;
-
-    --border-color: #30363d;
-
-    --navy-900: #f0f3f6;
-    --navy-800: #d0d7de;
-
-    --gray-50: #161b22;
-    --gray-100: #1c2128;
-    --gray-200: #30363d;
-    --gray-500: #8c959f;
-    --gray-600: #b1bac4;
-    --gray-700: #d0d7de;
-
-    color-scheme: dark;
-}
-
 .owner-page {
     background: var(--gray-50);
     min-height: 100vh;
@@ -2336,55 +2311,6 @@ REAL OWNER BOOKING UI
     color: #991b1b;
 }
 
-
-html[data-theme="dark"]
-.booking-status-badge.active,
-
-html[data-theme="dark"]
-.booking-status-badge.completed,
-
-html[data-theme="dark"]
-.booking-status-badge.paid {
-    background: rgba(34, 197, 94, 0.18);
-    color: #86efac;
-}
-
-
-html[data-theme="dark"]
-.booking-status-badge.upcoming,
-
-html[data-theme="dark"]
-.booking-status-badge.confirmed {
-    background: rgba(59, 130, 246, 0.18);
-    color: #93c5fd;
-}
-
-
-html[data-theme="dark"]
-.booking-status-badge.pending,
-
-html[data-theme="dark"]
-.booking-status-badge.unpaid {
-    background: rgba(245, 158, 11, 0.18);
-    color: #fcd34d;
-}
-
-
-html[data-theme="dark"]
-.booking-status-badge.cancelled,
-
-html[data-theme="dark"]
-.booking-status-badge.failed,
-
-html[data-theme="dark"]
-.booking-status-badge.refunded,
-
-html[data-theme="dark"]
-.booking-status-badge.partially_refunded {
-    background: rgba(239, 68, 68, 0.18);
-    color: #fca5a5;
-}
-
 /* ========================================
 COMPACT STYLE OWNER ACCOUNT
 ======================================== */
@@ -3158,8 +3084,8 @@ COMPACT STYLE OWNER ACCOUNT
 }
 
 /* ============================================
-   OWNER DASHBOARD PARKING IMAGE MANAGEMENT
-   ============================================ */
+OWNER DASHBOARD PARKING IMAGE MANAGEMENT
+============================================ */
 
 #owner-parking-images-grid {
     grid-template-columns:
@@ -3287,5 +3213,960 @@ COMPACT STYLE OWNER ACCOUNT
     .photo-preview-item img {
 
         height: 210px;
+    }
+}
+
+/* =========================================================
+PARKSMART OWNER DASHBOARD — FUTURISTIC LIGHT UI UPGRADE
+========================================================= */
+
+.owner-dashboard-root {
+    position: relative;
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at 8% 10%,
+            rgba(59, 108, 245, 0.10),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 92% 22%,
+            rgba(14, 165, 233, 0.08),
+            transparent 26%
+        ),
+        linear-gradient(
+            180deg,
+            #f8fbff 0%,
+            #f5f7fb 45%,
+            #f8fafc 100%
+        );
+}
+
+
+/* subtle dashboard grid */
+
+.owner-dashboard-root::before {
+    content: "";
+
+    position: fixed;
+    inset: 0;
+
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(
+            rgba(23, 32, 51, 0.025) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(23, 32, 51, 0.025) 1px,
+            transparent 1px
+        );
+
+    background-size:
+        42px 42px;
+
+    mask-image:
+        linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.5),
+            transparent 80%
+        );
+
+    z-index: 0;
+}
+
+
+.owner-dashboard-root .owner-main {
+    position: relative;
+    z-index: 1;
+}
+
+
+/* =========================================================
+NAVBAR
+========================================================= */
+
+.owner-dashboard-root .navbar {
+    background:
+        rgba(255, 255, 255, 0.88);
+
+    backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
+        blur(18px);
+
+    border-bottom:
+        1px solid rgba(148, 163, 184, 0.22);
+
+    box-shadow:
+        0 6px 30px rgba(15, 23, 42, 0.05);
+}
+
+
+/* =========================================================
+DASHBOARD HEADER
+========================================================= */
+
+.owner-dashboard-root .dashboard-header-bar {
+    position: relative;
+
+    padding:
+        28px 30px;
+
+    border-radius:
+        24px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.96),
+            rgba(246, 249, 255, 0.92)
+        );
+
+    border:
+        1px solid rgba(148, 163, 184, 0.22);
+
+    box-shadow:
+        0 20px 50px rgba(15, 23, 42, 0.08);
+
+    overflow: hidden;
+}
+
+
+/* glowing accent */
+
+.owner-dashboard-root .dashboard-header-bar::before {
+    content: "";
+
+    position: absolute;
+
+    width: 260px;
+    height: 260px;
+
+    right: -80px;
+    top: -130px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(59, 108, 245, 0.18),
+            rgba(59, 108, 245, 0)
+        );
+
+    pointer-events: none;
+}
+
+
+.owner-dashboard-root .dashboard-header-bar::after {
+    content: "";
+
+    position: absolute;
+
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+    height: 3px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #2563eb,
+            #38bdf8,
+            #6366f1,
+            transparent 88%
+        );
+}
+
+
+.owner-dashboard-root .dashboard-heading {
+    position: relative;
+    z-index: 1;
+}
+
+
+.owner-dashboard-root .dashboard-heading h1 {
+    font-size:
+        clamp(1.8rem, 3vw, 2.4rem);
+
+    background:
+        linear-gradient(
+            90deg,
+            #0f172a,
+            #1e3a8a,
+            #2563eb
+        );
+
+    -webkit-background-clip:
+        text;
+
+    background-clip:
+        text;
+
+    color:
+        transparent;
+
+    margin-top:
+        4px;
+}
+
+
+/* =========================================================
+PARKING SPACE SELECTOR
+========================================================= */
+
+.owner-dashboard-root
+#dashboard-space-selector {
+    min-height:
+        44px;
+
+    padding:
+        10px 42px 10px 15px;
+
+    border:
+        1px solid rgba(59, 108, 245, 0.20);
+
+    background:
+        rgba(255, 255, 255, 0.94);
+
+    box-shadow:
+        0 8px 22px rgba(15, 23, 42, 0.05);
+
+    font-weight:
+        650;
+
+    cursor:
+        pointer;
+}
+
+
+.owner-dashboard-root
+#dashboard-space-selector:hover {
+    border-color:
+        rgba(37, 99, 235, 0.45);
+}
+
+
+.owner-dashboard-root
+#dashboard-space-selector:focus {
+    border-color:
+        #2563eb;
+
+    box-shadow:
+        0 0 0 4px rgba(37, 99, 235, 0.10),
+        0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+
+/* =========================================================
+FACILITY ID PILL
+========================================================= */
+
+.owner-dashboard-root .space-select-pill {
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            #eff6ff,
+            #eef2ff
+        );
+
+    border:
+        1px solid rgba(37, 99, 235, 0.18);
+
+    color:
+        #1d4ed8;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+
+/* =========================================================
+METRIC CARDS
+========================================================= */
+
+.owner-dashboard-root .metric-card {
+    position: relative;
+
+    overflow: hidden;
+
+    min-height:
+        145px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.98),
+            rgba(248, 250, 252, 0.95)
+        );
+
+    border:
+        1px solid rgba(148, 163, 184, 0.18);
+
+    border-radius:
+        22px;
+
+    box-shadow:
+        0 14px 35px rgba(15, 23, 42, 0.055);
+
+    transition:
+        transform 0.28s ease,
+        box-shadow 0.28s ease,
+        border-color 0.28s ease;
+
+    isolation:
+        isolate;
+}
+
+
+.owner-dashboard-root .metric-card::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    width: 4px;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            to bottom,
+            #2563eb,
+            #38bdf8
+        );
+
+    opacity:
+        0.75;
+}
+
+
+.owner-dashboard-root .metric-card::after {
+    content: "";
+
+    position: absolute;
+
+    width: 130px;
+    height: 130px;
+
+    right: -50px;
+    bottom: -60px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(59, 108, 245, 0.10),
+            transparent 68%
+        );
+
+    z-index:
+        -1;
+}
+
+
+.owner-dashboard-root .metric-card:hover {
+    transform:
+        translateY(-6px);
+
+    border-color:
+        rgba(37, 99, 235, 0.25);
+
+    box-shadow:
+        0 24px 55px rgba(15, 23, 42, 0.11);
+}
+
+
+.owner-dashboard-root .metric-label {
+    font-size:
+        0.76rem;
+
+    letter-spacing:
+        0.075em;
+
+    font-weight:
+        750;
+}
+
+
+.owner-dashboard-root .metric-value {
+    margin-top:
+        3px;
+
+    font-size:
+        clamp(1.6rem, 2.3vw, 2rem);
+}
+
+
+/* =========================================================
+METRIC ICONS
+========================================================= */
+
+.owner-dashboard-root .metric-icon-box {
+    position: relative;
+
+    width:
+        52px;
+
+    height:
+        52px;
+
+    border-radius:
+        16px;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        0 10px 24px rgba(15, 23, 42, 0.06);
+
+    transition:
+        transform 0.3s ease;
+}
+
+
+.owner-dashboard-root
+.metric-card:hover
+.metric-icon-box {
+    transform:
+        scale(1.08)
+        rotate(-3deg);
+}
+
+
+/* =========================================================
+PANEL CARDS
+========================================================= */
+
+.owner-dashboard-root .panel-card {
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        rgba(255, 255, 255, 0.92);
+
+    backdrop-filter:
+        blur(14px);
+
+    -webkit-backdrop-filter:
+        blur(14px);
+
+    border:
+        1px solid rgba(148, 163, 184, 0.18);
+
+    border-radius:
+        24px;
+
+    box-shadow:
+        0 16px 40px rgba(15, 23, 42, 0.055);
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease,
+        border-color 0.3s ease;
+}
+
+
+.owner-dashboard-root .panel-card:hover {
+    transform:
+        translateY(-3px);
+
+    border-color:
+        rgba(37, 99, 235, 0.20);
+
+    box-shadow:
+        0 25px 60px rgba(15, 23, 42, 0.09);
+}
+
+
+.owner-dashboard-root .panel-card-header {
+    position: relative;
+}
+
+
+.owner-dashboard-root .panel-card-title {
+    font-size:
+        1.15rem;
+
+    letter-spacing:
+        -0.015em;
+}
+
+
+/* small gradient header line */
+
+.owner-dashboard-root
+.panel-card-header::after {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    bottom: -15px;
+
+    width:
+        64px;
+
+    height:
+        2px;
+
+    border-radius:
+        999px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #2563eb,
+            #38bdf8
+        );
+}
+
+
+/* =========================================================
+LIVE STATUS BEACON
+========================================================= */
+
+.owner-dashboard-root .beacon-dot {
+    position: relative;
+}
+
+
+.owner-dashboard-root
+.status-beacon-container.open
+.beacon-dot {
+    animation:
+        ownerBeaconPulse 1.8s infinite;
+}
+
+
+@keyframes ownerBeaconPulse {
+
+    0% {
+        box-shadow:
+            0 0 0 0
+            rgba(34, 197, 94, 0.45);
+    }
+
+    70% {
+        box-shadow:
+            0 0 0 11px
+            rgba(34, 197, 94, 0);
+    }
+
+    100% {
+        box-shadow:
+            0 0 0 0
+            rgba(34, 197, 94, 0);
+    }
+}
+
+
+/* =========================================================
+AVAILABILITY PANEL
+========================================================= */
+
+.owner-dashboard-root
+.availability-control-box {
+    position: relative;
+
+    overflow: hidden;
+
+    border-radius:
+        18px;
+}
+
+
+.owner-dashboard-root
+.availability-control-box.open-state {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(236, 253, 245, 0.9),
+            rgba(240, 253, 250, 0.8)
+        );
+
+    border-color:
+        rgba(34, 197, 94, 0.22);
+}
+
+
+.owner-dashboard-root
+.availability-control-box.closed-state {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(254, 242, 242, 0.9),
+            rgba(255, 247, 237, 0.8)
+        );
+}
+
+
+/* =========================================================
+BUTTONS
+========================================================= */
+
+.owner-dashboard-root button,
+.owner-dashboard-root .btn {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+
+.owner-dashboard-root button:active,
+.owner-dashboard-root .btn:active {
+    transform:
+        scale(0.97);
+}
+
+
+/* =========================================================
+BOOKING ROW ENHANCEMENT
+========================================================= */
+
+.owner-dashboard-root
+#owner-bookings-table-body tr {
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+.owner-dashboard-root
+#owner-bookings-table-body tr:hover {
+    background:
+        #f8fbff;
+}
+
+
+/* =========================================================
+OCCUPANCY PROGRESS BAR
+========================================================= */
+
+.owner-dashboard-root
+#occupancy-bar-progress {
+    position: relative;
+
+    background:
+        linear-gradient(
+            90deg,
+            #2563eb,
+            #38bdf8,
+            #6366f1
+        ) !important;
+
+    background-size:
+        200% 100% !important;
+
+    animation:
+        ownerProgressFlow 3.5s linear infinite;
+}
+
+
+@keyframes ownerProgressFlow {
+
+    from {
+        background-position:
+            0% 50%;
+    }
+
+    to {
+        background-position:
+            200% 50%;
+    }
+}
+
+
+/* =========================================================
+SCROLL REVEAL
+========================================================= */
+
+.owner-dashboard-root
+.owner-reveal {
+    opacity:
+        0;
+
+    transform:
+        translateY(22px);
+
+    transition:
+        opacity 0.65s ease,
+        transform 0.65s ease;
+}
+
+
+.owner-dashboard-root
+.owner-reveal.owner-visible {
+    opacity:
+        1;
+
+    transform:
+        translateY(0);
+}
+
+
+/* stagger cards */
+
+.owner-dashboard-root
+.metric-card.owner-visible:nth-child(1) {
+    transition-delay:
+        0.05s;
+}
+
+.owner-dashboard-root
+.metric-card.owner-visible:nth-child(2) {
+    transition-delay:
+        0.10s;
+}
+
+.owner-dashboard-root
+.metric-card.owner-visible:nth-child(3) {
+    transition-delay:
+        0.15s;
+}
+
+.owner-dashboard-root
+.metric-card.owner-visible:nth-child(4) {
+    transition-delay:
+        0.20s;
+}
+
+
+/* =========================================================
+MORE MENU
+========================================================= */
+
+.owner-dashboard-root
+.dashboard-more-menu {
+    background:
+        rgba(255, 255, 255, 0.96);
+
+    backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
+        blur(18px);
+
+    border:
+        1px solid rgba(148, 163, 184, 0.20);
+
+    box-shadow:
+        0 25px 65px rgba(15, 23, 42, 0.14);
+}
+
+
+.owner-dashboard-root
+.dashboard-more-menu button:hover,
+.owner-dashboard-root
+.dashboard-more-menu a:hover {
+    background:
+        linear-gradient(
+            90deg,
+            #eff6ff,
+            #f8fafc
+        );
+}
+
+
+/* =========================================================
+SCROLLBAR
+========================================================= */
+
+.owner-dashboard-root ::-webkit-scrollbar {
+    width:
+        9px;
+
+    height:
+        9px;
+}
+
+
+.owner-dashboard-root ::-webkit-scrollbar-track {
+    background:
+        #f1f5f9;
+}
+
+
+.owner-dashboard-root ::-webkit-scrollbar-thumb {
+    background:
+        #cbd5e1;
+
+    border-radius:
+        999px;
+
+    border:
+        2px solid #f1f5f9;
+}
+
+
+.owner-dashboard-root ::-webkit-scrollbar-thumb:hover {
+    background:
+        #94a3b8;
+}
+
+
+/* =========================================================
+REDUCED MOTION ACCESSIBILITY
+========================================================= */
+
+@media (
+    prefers-reduced-motion:
+    reduce
+) {
+
+    .owner-dashboard-root *,
+    .owner-dashboard-root *::before,
+    .owner-dashboard-root *::after {
+        animation-duration:
+            0.01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            0.01ms !important;
+    }
+}
+
+
+/* =========================================================
+MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+    .owner-dashboard-root
+    .dashboard-header-bar {
+        padding:
+            22px 18px;
+
+        border-radius:
+            18px;
+    }
+
+
+    .owner-dashboard-root
+    .metric-card {
+        min-height:
+            auto;
+    }
+
+
+    .owner-dashboard-root
+    .panel-card {
+        border-radius:
+            18px;
+
+        padding:
+            20px;
+    }
+}
+
+/* =========================================================
+   LIVE SPACE CHIP
+   ========================================================= */
+
+.owner-space-title-row {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        12px;
+
+    flex-wrap:
+        wrap;
+}
+
+
+.owner-live-chip {
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+
+    padding:
+        6px 11px;
+
+    border-radius:
+        999px;
+
+    background:
+        #ecfdf5;
+
+    color:
+        #047857;
+
+    border:
+        1px solid #a7f3d0;
+
+    font-size:
+        0.72rem;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        0.08em;
+
+    box-shadow:
+        0 5px 16px rgba(16, 185, 129, 0.12);
+}
+
+
+.owner-live-dot {
+    width:
+        8px;
+
+    height:
+        8px;
+
+    border-radius:
+        50%;
+
+    background:
+        #22c55e;
+
+    animation:
+        ownerLiveDot 1.7s infinite;
+}
+
+
+@keyframes ownerLiveDot {
+
+    0% {
+        box-shadow:
+            0 0 0 0
+            rgba(34, 197, 94, 0.45);
+    }
+
+    70% {
+        box-shadow:
+            0 0 0 7px
+            rgba(34, 197, 94, 0);
+    }
+
+    100% {
+        box-shadow:
+            0 0 0 0
+            rgba(34, 197, 94, 0);
     }
 }

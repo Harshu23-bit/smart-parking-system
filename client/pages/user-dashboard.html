@@ -75,8 +75,10 @@
 
                 <input
                     class="input"
+                    id="destination"
                     name="q"
-                    placeholder="Phoenix Marketcity, Kurla"
+                    autocomplete="off"
+                    placeholder="Where do you want to park?"
                 >
             </div>
 
@@ -145,6 +147,11 @@
 
 requireUser();
 
+let selectedDestination = {
+    latitude: null,
+    longitude: null
+};
+
 
 const dateInput =
     document.getElementById("date");
@@ -153,6 +160,215 @@ const today =
     new Date().toISOString().split("T")[0];
 
 dateInput.min = today;
+
+
+const destinationInput =
+    document.getElementById(
+        "destination"
+    );
+
+const destinationSuggestions =
+    document.getElementById(
+        "destination-suggestions"
+    );
+
+const useMyLocationButton =
+    document.getElementById(
+        "use-my-location"
+    );
+
+
+let destinationTimer;
+
+
+destinationInput.addEventListener(
+    "input",
+    () => {
+
+        clearTimeout(
+            destinationTimer
+        );
+
+
+        // Text changed, so previously
+        // selected coordinates are invalid.
+        selectedDestination = {
+            latitude: null,
+            longitude: null
+        };
+
+
+        const query =
+            destinationInput
+                .value
+                .trim();
+
+
+        if (query.length < 3) {
+
+            destinationSuggestions.innerHTML =
+                "";
+
+            destinationSuggestions.classList
+                .remove("visible");
+
+            return;
+        }
+
+
+        destinationTimer =
+            setTimeout(
+                async () => {
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                `/api/location/autocomplete?q=${
+                                    encodeURIComponent(query)
+                                }`
+                            );
+
+
+                        const data =
+                            await response.json();
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                data.message ||
+                                "Unable to search addresses."
+                            );
+                        }
+
+
+                        renderDestinationSuggestions(
+                            data.suggestions || []
+                        );
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Destination search error:",
+                            error
+                        );
+                    }
+
+                },
+                300
+            );
+    }
+);
+
+
+function renderDestinationSuggestions(
+    suggestions
+) {
+
+    if (!suggestions.length) {
+
+        destinationSuggestions.innerHTML =
+            "";
+
+        destinationSuggestions.classList
+            .remove("visible");
+
+        return;
+    }
+
+
+    destinationSuggestions.innerHTML =
+        suggestions
+            .map(
+                (item, index) => `
+                    <button
+                        type="button"
+                        class="suggestion-item"
+                        data-index="${index}"
+                    >
+                        <span class="suggestion-icon">
+                            📍
+                        </span>
+
+                        <span>
+                            ${escapeHtml(
+                                item.formatted
+                            )}
+                        </span>
+                    </button>
+                `
+            )
+            .join("");
+
+
+    destinationSuggestions.classList
+        .add("visible");
+
+
+    destinationSuggestions
+        .querySelectorAll(
+            ".suggestion-item"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const location =
+                        suggestions[
+                            Number(
+                                button.dataset.index
+                            )
+                        ];
+
+
+                    // Clicking the suggestion
+                    // confirms this destination.
+                    destinationInput.value =
+                        location.formatted;
+
+
+                    selectedDestination = {
+                        latitude:
+                            location.latitude,
+
+                        longitude:
+                            location.longitude
+                    };
+
+
+                    destinationSuggestions.innerHTML =
+                        "";
+
+                    destinationSuggestions.classList
+                        .remove("visible");
+                }
+            );
+        });
+}
+
+
+document.addEventListener(
+    "click",
+    event => {
+
+        if (
+            !destinationInput.contains(
+                event.target
+            ) &&
+            !destinationSuggestions.contains(
+                event.target
+            )
+        ) {
+
+            destinationSuggestions.classList
+                .remove("visible");
+        }
+    }
+);
 
 
 document
@@ -188,9 +404,22 @@ document
 
             const data =
                 await searchParking({
-                    q: form.get("q"),
+
+                    q:
+                        selectedDestination.latitude === null
+                            ? form.get("q")
+                            : "",
+
                     startTime,
-                    endTime
+                    endTime,
+
+                    latitude:
+                        selectedDestination.latitude,
+
+                    longitude:
+                        selectedDestination.longitude,
+
+                    radiusKm: 5
                 });
 
             renderParking(data.parking);
@@ -245,6 +474,20 @@ function renderParking(parking) {
                     <p>
                         📍 ${escapeHtml(p.address)}
                     </p>
+
+                    ${
+                        p.distance_km !== null &&
+                        p.distance_km !== undefined
+                            ? `
+                                <p>
+                                    📏 ${Number(
+                                        p.distance_km
+                                    ).toFixed(1)}
+                                    km away
+                                </p>
+                            `
+                            : ""
+                    }
 
                     <p>
                         ⭐ 4.5
