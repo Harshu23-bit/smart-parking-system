@@ -1,214 +1,1288 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>ParkSmart — Parking Details</title>
 
-    <title>Parking Details</title>
+    <link rel="stylesheet" href="../css/user.css">
 
-    <link
-        rel="stylesheet"
-        href="../css/user.css"
-    >
+    <style>
+        /* =========================================================
+           PARKING DETAILS PAGE
+           ========================================================= */
 
+        .details-page {
+            min-height: 100vh;
+            background: #f6f8fb;
+        }
+
+        .details-main {
+            padding: 32px 20px 60px;
+        }
+
+        .details-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .details-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .details-back:hover {
+            text-decoration: underline;
+        }
+
+        .details-card {
+            background: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .details-hero {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            min-height: 330px;
+        }
+
+        .details-image {
+            min-height: 330px;
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(37, 99, 235, 0.9),
+                    rgba(15, 23, 42, 0.88)
+                );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .details-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .details-image-placeholder {
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .details-image-placeholder .parking-icon {
+            font-size: 64px;
+            margin-bottom: 12px;
+        }
+
+        .details-summary {
+            padding: 34px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .details-status {
+            display: inline-flex;
+            width: fit-content;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .details-status.unavailable {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .details-title {
+            margin: 0 0 10px;
+            font-size: 32px;
+            line-height: 1.15;
+            color: #111827;
+        }
+
+        .details-address {
+            color: #6b7280;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .details-price {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            margin-bottom: 24px;
+        }
+
+        .details-price strong {
+            font-size: 32px;
+            color: #111827;
+        }
+
+        .details-price span {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .details-book-btn {
+            width: 100%;
+            border: 0;
+            border-radius: 10px;
+            padding: 14px 20px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .details-book-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .details-book-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .details-content {
+            padding: 30px 34px 36px;
+        }
+
+        .details-section {
+            margin-bottom: 32px;
+        }
+
+        .details-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .details-section h2 {
+            margin: 0 0 16px;
+            font-size: 20px;
+            color: #111827;
+        }
+
+        .details-description {
+            color: #4b5563;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        .info-box {
+            padding: 18px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f9fafb;
+        }
+
+        .info-label {
+            display: block;
+            color: #6b7280;
+            font-size: 12px;
+            margin-bottom: 7px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .info-value {
+            color: #111827;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .bay-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .bay-box {
+            padding: 16px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            text-align: center;
+            background: #ffffff;
+        }
+
+        .bay-box strong {
+            display: block;
+            font-size: 21px;
+            color: #111827;
+            margin-bottom: 5px;
+        }
+
+        .bay-box span {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .amenities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .amenity {
+            padding: 9px 13px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .location-box {
+            padding: 18px;
+            border-radius: 12px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .location-box p {
+            margin: 5px 0;
+            color: #4b5563;
+        }
+
+        .gate-value {
+            font-weight: 700;
+            color: #111827 !important;
+        }
+
+        .hours-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .hours-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 12px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f9fafb;
+            font-size: 14px;
+        }
+
+        .hours-day {
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .hours-time {
+            color: #6b7280;
+        }
+
+        .details-loading,
+        .details-error {
+            background: white;
+            border-radius: 16px;
+            padding: 50px 25px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .details-loading {
+            color: #6b7280;
+        }
+
+        .details-error h2 {
+            margin-top: 0;
+            color: #111827;
+        }
+
+        .details-error p {
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .error-btn {
+            display: inline-block;
+            padding: 11px 18px;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 850px) {
+            .details-hero {
+                grid-template-columns: 1fr;
+            }
+
+            .details-image {
+                min-height: 250px;
+            }
+
+            .details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .bay-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .details-main {
+                padding: 20px 12px 40px;
+            }
+
+            .details-summary,
+            .details-content {
+                padding: 22px;
+            }
+
+            .details-title {
+                font-size: 26px;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .bay-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .hours-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
-<body>
+<body class="details-page">
 
-<header class="navbar">
-
-    <div class="logo">
-        ParkSmart
-    </div>
-
-    <nav class="nav-links">
-
-        <a href="user-dashboard.html">
-            Search
+    <!-- NAVBAR -->
+    <nav class="user-nav">
+        <a href="user-dashboard.html" class="user-logo">
+            Park<span>Smart</span>
         </a>
 
-        <a href="my-bookings.html">
-            My Bookings
-        </a>
+        <div class="user-nav-links">
+            <a href="user-dashboard.html">Find Parking</a>
+            <a href="my-bookings.html">My Bookings</a>
+            <a href="my-vehicles.html">My Vehicles</a>
+            <a href="index.html">Home</a>
+            <a href="#" onclick="logoutUser(); return false;">Logout</a>
+        </div>
 
-        <a href="my-vehicles.html">
-            Vehicles
-        </a>
-
+        <strong>
+            Hi, <span id="user-name">User</span>
+        </strong>
     </nav>
 
-</header>
 
+    <!-- MAIN -->
+    <main class="details-main">
+        <div class="details-container">
 
-<main class="container">
+            <a href="user-dashboard.html" class="details-back">
+                ← Back to Find Parking
+            </a>
 
-    <div id="details">
-        Loading...
-    </div>
-
-</main>
-
-
-<script src="../js/user.js"></script>
-
-<script>
-
-requireUser();
-
-
-const id =
-    new URLSearchParams(
-        window.location.search
-    ).get("id");
-
-
-if (!id) {
-    window.location.href =
-        "user-dashboard.html";
-}
-
-
-loadDetails();
-
-
-async function loadDetails() {
-
-    try {
-
-        const data =
-            await getParkingDetails(id);
-
-        const p =
-            data.parking;
-
-        const image =
-            p.images?.[0]?.image_url ||
-            "../assets/images/hero-parking.jpg";
-
-        document
-            .getElementById("details")
-            .innerHTML = `
-
-            <div class="card">
-
-                <img
-                    class="parking-image"
-                    src="${image}"
-                    alt="${escapeHtml(p.name)}"
-                >
-
-                <h1>
-                    ${escapeHtml(p.name)}
-                </h1>
-
-                <p>
-                    ⭐ 4.5
-                </p>
-
-                <p>
-                    📍 ${escapeHtml(p.address)}
-                    ${p.city ? ", " + escapeHtml(p.city) : ""}
-                </p>
-
-                <p class="price">
-                    ₹${Number(p.price_per_hour).toFixed(0)}/hour
-                </p>
-
-                <p class="available">
-                    🟢 ${p.available_spaces}
-                    spaces available
-                </p>
-
-                <p>
-                    🚗 ${formatParkingType(p.parking_type)}
-                </p>
-
-                <hr>
-
-                <h3>
-                    Description
-                </h3>
-
-                <p>
-                    ${escapeHtml(
-                        p.description ||
-                        "Convenient parking facility."
-                    )}
-                </p>
-
-                <h3>
-                    Amenities
-                </h3>
-
-                <p>
-                    ${formatAmenities(p.amenities)}
-                </p>
-
-                <br>
-
-                <a
-                    class="btn btn-primary"
-                    href="booking.html?id=${p.id}"
-                >
-                    Book This Parking
-                </a>
-
+            <!-- LOADING -->
+            <div id="loading-state" class="details-loading">
+                Loading parking details...
             </div>
-        `;
 
-    } catch (error) {
+            <!-- ERROR -->
+            <div id="error-state" class="details-error" style="display:none;">
+                <h2>Parking Not Found</h2>
+                <p id="error-message">
+                    This parking facility could not be loaded.
+                </p>
 
-        document
-            .getElementById("details")
-            .innerHTML = `
-                <div class="card">
-                    <h2>Error</h2>
-                    <p>${escapeHtml(error.message)}</p>
+                <a href="user-dashboard.html" class="error-btn">
+                    Back to Parking Search
+                </a>
+            </div>
+
+            <!-- DETAILS -->
+            <div id="details-card" class="details-card" style="display:none;">
+
+                <!-- HERO -->
+                <div class="details-hero">
+
+                    <div class="details-image" id="parking-image">
+                        <div class="details-image-placeholder">
+                            <div class="parking-icon">🅿️</div>
+                            <div>ParkSmart Parking Facility</div>
+                        </div>
+                    </div>
+
+                    <div class="details-summary">
+
+                        <div id="status-badge" class="details-status">
+                            <span class="status-dot"></span>
+                            Available
+                        </div>
+
+                        <h1 id="parking-name" class="details-title">
+                            Parking
+                        </h1>
+
+                        <div id="parking-address" class="details-address">
+                            Loading address...
+                        </div>
+
+                        <div class="details-price">
+                            <strong id="parking-price">₹0</strong>
+                            <span>per hour</span>
+                        </div>
+
+                        <button
+                            id="book-button"
+                            class="details-book-btn"
+                            type="button"
+                        >
+                            Book This Parking
+                        </button>
+
+                    </div>
                 </div>
-            `;
-    }
-}
 
 
-function formatParkingType(type) {
+                <!-- CONTENT -->
+                <div class="details-content">
 
-    return String(type || "")
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, c => c.toUpperCase());
-}
+                    <!-- DESCRIPTION -->
+                    <section class="details-section">
+                        <h2>About This Parking</h2>
 
-
-function formatAmenities(amenities) {
-
-    if (!Array.isArray(amenities) ||
-        amenities.length === 0) {
-
-        return "CCTV • Security • Well Lit";
-    }
-
-    return amenities
-        .map(a => `✓ ${escapeHtml(String(a))}`)
-        .join(" • ");
-}
+                        <p
+                            id="parking-description"
+                            class="details-description"
+                        >
+                            No description available.
+                        </p>
+                    </section>
 
 
-function escapeHtml(value) {
+                    <!-- PARKING INFORMATION -->
+                    <section class="details-section">
+                        <h2>Parking Information</h2>
 
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+                        <div class="details-grid">
 
-</script>
+                            <div class="info-box">
+                                <span class="info-label">Available</span>
+                                <span
+                                    id="available-spaces"
+                                    class="info-value"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <div class="info-box">
+                                <span class="info-label">Total Capacity</span>
+                                <span
+                                    id="total-capacity"
+                                    class="info-value"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <div class="info-box">
+                                <span class="info-label">Parking Type</span>
+                                <span
+                                    id="parking-type"
+                                    class="info-value"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <div class="info-box">
+                                <span class="info-label">Daily Maximum</span>
+                                <span
+                                    id="daily-max"
+                                    class="info-value"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                        </div>
+                    </section>
+
+
+                    <!-- BAY TYPES -->
+                    <section class="details-section">
+                        <h2>Parking Bays</h2>
+
+                        <div class="bay-grid">
+
+                            <div class="bay-box">
+                                <strong id="standard-bays">0</strong>
+                                <span>Standard</span>
+                            </div>
+
+                            <div class="bay-box">
+                                <strong id="compact-bays">0</strong>
+                                <span>Compact</span>
+                            </div>
+
+                            <div class="bay-box">
+                                <strong id="ev-bays">0</strong>
+                                <span>EV</span>
+                            </div>
+
+                            <div class="bay-box">
+                                <strong id="motorcycle-bays">0</strong>
+                                <span>Motorcycle</span>
+                            </div>
+
+                            <div class="bay-box">
+                                <strong id="scooter-bays">0</strong>
+                                <span>Scooter</span>
+                            </div>
+
+                        </div>
+                    </section>
+
+
+                    <!-- AMENITIES -->
+                    <section
+                        id="amenities-section"
+                        class="details-section"
+                        style="display:none;"
+                    >
+                        <h2>Amenities</h2>
+
+                        <div id="amenities" class="amenities"></div>
+                    </section>
+
+
+                    <!-- LOCATION -->
+                    <section class="details-section">
+                        <h2>Location & Access</h2>
+
+                        <div class="location-box">
+
+                            <p id="location-address">
+                                —
+                            </p>
+
+                            <p id="location-city">
+                                —
+                            </p>
+
+                            <p id="location-postal">
+                                —
+                            </p>
+
+                            <p class="gate-value">
+                                Gate:
+                                <span id="access-gate">Main Gate</span>
+                            </p>
+
+                        </div>
+                    </section>
+
+
+                    <!-- OPERATING HOURS -->
+                    <section
+                        id="hours-section"
+                        class="details-section"
+                        style="display:none;"
+                    >
+                        <h2>Operating Hours</h2>
+
+                        <div
+                            id="operating-hours"
+                            class="hours-list"
+                        ></div>
+                    </section>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+
+    <!-- EXISTING USER JS -->
+    <script src="../js/user.js"></script>
+
+
+    <script>
+        (async function () {
+
+            /* ---------------------------------------------------------
+               AUTHENTICATION
+               --------------------------------------------------------- */
+
+            if (!requireUser()) {
+                return;
+            }
+
+            const storedUser =
+                JSON.parse(
+                    localStorage.getItem("parksmart_user") || "{}"
+                );
+
+            const userName =
+                document.getElementById("user-name");
+
+            if (userName) {
+                userName.textContent =
+                    storedUser.name || "User";
+            }
+
+
+            /* ---------------------------------------------------------
+               GET PARKING ID
+               --------------------------------------------------------- */
+
+            const params =
+                new URLSearchParams(window.location.search);
+
+            const parkingId =
+                params.get("id");
+
+            const loadingState =
+                document.getElementById("loading-state");
+
+            const errorState =
+                document.getElementById("error-state");
+
+            const errorMessage =
+                document.getElementById("error-message");
+
+            const detailsCard =
+                document.getElementById("details-card");
+
+
+            if (!parkingId) {
+
+                loadingState.style.display = "none";
+
+                errorState.style.display = "block";
+
+                errorMessage.textContent =
+                    "No parking facility was selected.";
+
+                return;
+            }
+
+
+            /* ---------------------------------------------------------
+               HELPERS
+               --------------------------------------------------------- */
+
+            function safeNumber(value, fallback = 0) {
+
+                const number =
+                    Number(value);
+
+                return Number.isFinite(number)
+                    ? number
+                    : fallback;
+            }
+
+
+            function formatCurrency(value) {
+
+                const number =
+                    safeNumber(value);
+
+                return "₹" +
+                    number.toLocaleString("en-IN");
+            }
+
+
+            function formatParkingType(value) {
+
+                if (!value) {
+                    return "General";
+                }
+
+                return String(value)
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, char =>
+                        char.toUpperCase()
+                    );
+            }
+
+
+            function formatAmenity(value) {
+
+                return String(value)
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, char =>
+                        char.toUpperCase()
+                    );
+            }
+
+
+            function formatDay(day) {
+
+                const days = [
+                    "Sunday",
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday"
+                ];
+
+                const index =
+                    safeNumber(day, -1);
+
+                return days[index] || String(day);
+            }
+
+
+            function formatTime(time) {
+
+                if (!time) {
+                    return "—";
+                }
+
+                const parts =
+                    String(time).split(":");
+
+                if (parts.length < 2) {
+                    return time;
+                }
+
+                let hour =
+                    parseInt(parts[0], 10);
+
+                const minute =
+                    parts[1];
+
+                const period =
+                    hour >= 12
+                        ? "PM"
+                        : "AM";
+
+                hour =
+                    hour % 12 || 12;
+
+                return `${hour}:${minute} ${period}`;
+            }
+
+
+            /* ---------------------------------------------------------
+               LOAD PARKING DETAILS
+               --------------------------------------------------------- */
+
+            try {
+
+                const data =
+                    await getParkingDetails(parkingId);
+
+                /*
+                 * Backend returns:
+                 *
+                 * {
+                 *   status: "success",
+                 *   parking: {...}
+                 * }
+                 */
+
+                const parking =
+                    data.parking;
+
+
+                if (!parking) {
+                    throw new Error(
+                        "Parking information was not returned."
+                    );
+                }
+
+
+                /* -----------------------------------------------------
+                   BASIC DETAILS
+                   ----------------------------------------------------- */
+
+                document.getElementById(
+                    "parking-name"
+                ).textContent =
+                    parking.name || "Parking Facility";
+
+
+                document.getElementById(
+                    "parking-address"
+                ).textContent =
+                    [
+                        parking.address,
+                        parking.city,
+                        parking.postal_code
+                    ]
+                        .filter(Boolean)
+                        .join(", ") ||
+                    "Address not available";
+
+
+                document.getElementById(
+                    "parking-price"
+                ).textContent =
+                    formatCurrency(
+                        parking.price_per_hour
+                    );
+
+
+                document.getElementById(
+                    "parking-description"
+                ).textContent =
+                    parking.description ||
+                    "No description has been provided for this parking facility.";
+
+
+                /* -----------------------------------------------------
+                   CAPACITY
+                   ----------------------------------------------------- */
+
+                document.getElementById(
+                    "available-spaces"
+                ).textContent =
+                    safeNumber(
+                        parking.available_spaces
+                    );
+
+
+                document.getElementById(
+                    "total-capacity"
+                ).textContent =
+                    safeNumber(
+                        parking.capacity
+                    );
+
+
+                document.getElementById(
+                    "parking-type"
+                ).textContent =
+                    formatParkingType(
+                        parking.parking_type
+                    );
+
+
+                document.getElementById(
+                    "daily-max"
+                ).textContent =
+                    parking.daily_max != null
+                        ? formatCurrency(
+                            parking.daily_max
+                        )
+                        : "No limit";
+
+
+                /* -----------------------------------------------------
+                   BAY COUNTS
+                   ----------------------------------------------------- */
+
+                document.getElementById(
+                    "standard-bays"
+                ).textContent =
+                    safeNumber(
+                        parking.standard_bays
+                    );
+
+
+                document.getElementById(
+                    "compact-bays"
+                ).textContent =
+                    safeNumber(
+                        parking.compact_bays
+                    );
+
+
+                document.getElementById(
+                    "ev-bays"
+                ).textContent =
+                    safeNumber(
+                        parking.ev_bays
+                    );
+
+
+                document.getElementById(
+                    "motorcycle-bays"
+                ).textContent =
+                    safeNumber(
+                        parking.motorcycle_bays
+                    );
+
+
+                document.getElementById(
+                    "scooter-bays"
+                ).textContent =
+                    safeNumber(
+                        parking.scooter_bays
+                    );
+
+
+                /* -----------------------------------------------------
+                   LOCATION
+                   ----------------------------------------------------- */
+
+                document.getElementById(
+                    "location-address"
+                ).textContent =
+                    parking.address ||
+                    "Address not available";
+
+
+                document.getElementById(
+                    "location-city"
+                ).textContent =
+                    parking.city
+                        ? `City: ${parking.city}`
+                        : "City: —";
+
+
+                document.getElementById(
+                    "location-postal"
+                ).textContent =
+                    parking.postal_code
+                        ? `PIN: ${parking.postal_code}`
+                        : "PIN: —";
+
+
+                document.getElementById(
+                    "access-gate"
+                ).textContent =
+                    parking.access_gate ||
+                    "Main Gate";
+
+
+                /* -----------------------------------------------------
+                   STATUS
+                   ----------------------------------------------------- */
+
+                const statusBadge =
+                    document.getElementById(
+                        "status-badge"
+                    );
+
+                const bookButton =
+                    document.getElementById(
+                        "book-button"
+                    );
+
+
+                const available =
+                    safeNumber(
+                        parking.available_spaces
+                    ) > 0;
+
+
+                if (available) {
+
+                    statusBadge.innerHTML =
+                        `
+                        <span class="status-dot"></span>
+                        Available
+                        `;
+
+                    statusBadge.classList.remove(
+                        "unavailable"
+                    );
+
+                    bookButton.disabled = false;
+
+                    bookButton.textContent =
+                        "Book This Parking";
+
+                } else {
+
+                    statusBadge.innerHTML =
+                        `
+                        <span class="status-dot"></span>
+                        Currently Full
+                        `;
+
+                    statusBadge.classList.add(
+                        "unavailable"
+                    );
+
+                    bookButton.disabled = true;
+
+                    bookButton.textContent =
+                        "No Slots Available";
+                }
+
+
+                /* -----------------------------------------------------
+                   PARKING IMAGE
+                   ----------------------------------------------------- */
+
+                const imageContainer =
+                    document.getElementById(
+                        "parking-image"
+                    );
+
+
+                if (
+                    Array.isArray(parking.images) &&
+                    parking.images.length > 0
+                ) {
+
+                    const image =
+                        parking.images.find(
+                            item => item.is_primary
+                        ) ||
+                        parking.images[0];
+
+
+                    if (image && image.image_url) {
+
+                        imageContainer.innerHTML =
+                            `
+                            <img
+                                src="${escapeHtml(image.image_url)}"
+                                alt="${escapeHtml(
+                                    parking.name || "Parking facility"
+                                )}"
+                            >
+                            `;
+                    }
+                }
+
+
+                /* -----------------------------------------------------
+                   AMENITIES
+                   ----------------------------------------------------- */
+
+                const amenitiesSection =
+                    document.getElementById(
+                        "amenities-section"
+                    );
+
+                const amenitiesContainer =
+                    document.getElementById(
+                        "amenities"
+                    );
+
+
+                let amenities = [];
+
+
+                if (
+                    Array.isArray(parking.amenities)
+                ) {
+
+                    amenities =
+                        parking.amenities;
+
+                } else if (
+                    parking.amenities &&
+                    typeof parking.amenities === "object"
+                ) {
+
+                    amenities =
+                        Object.entries(
+                            parking.amenities
+                        )
+                        .filter(
+                            ([, value]) =>
+                                value === true ||
+                                value === "true"
+                        )
+                        .map(
+                            ([key]) => key
+                        );
+                }
+
+
+                if (amenities.length > 0) {
+
+                    amenitiesSection.style.display =
+                        "block";
+
+                    amenitiesContainer.innerHTML =
+                        amenities
+                            .map(
+                                amenity =>
+                                    `
+                                    <span class="amenity">
+                                        ${escapeHtml(
+                                            formatAmenity(amenity)
+                                        )}
+                                    </span>
+                                    `
+                            )
+                            .join("");
+
+                } else {
+
+                    amenitiesSection.style.display =
+                        "none";
+                }
+
+
+                /* -----------------------------------------------------
+                   OPERATING HOURS
+                   ----------------------------------------------------- */
+
+                const hours =
+                    Array.isArray(
+                        parking.operating_hours
+                    )
+                        ? parking.operating_hours
+                        : [];
+
+
+                const hoursSection =
+                    document.getElementById(
+                        "hours-section"
+                    );
+
+                const hoursContainer =
+                    document.getElementById(
+                        "operating-hours"
+                    );
+
+
+                if (hours.length > 0) {
+
+                    hoursSection.style.display =
+                        "block";
+
+
+                    hoursContainer.innerHTML =
+                        hours.map(hour => {
+
+                            const closed =
+                                hour.is_closed;
+
+
+                            return `
+                                <div class="hours-row">
+
+                                    <span class="hours-day">
+                                        ${escapeHtml(
+                                            formatDay(
+                                                hour.day_of_week
+                                            )
+                                        )}
+                                    </span>
+
+                                    <span class="hours-time">
+                                        ${
+                                            closed
+                                                ? "Closed"
+                                                : `${escapeHtml(
+                                                    formatTime(
+                                                        hour.opening_time
+                                                    )
+                                                )} – ${escapeHtml(
+                                                    formatTime(
+                                                        hour.closing_time
+                                                    )
+                                                )}`
+                                        }
+                                    </span>
+
+                                </div>
+                            `;
+
+                        }).join("");
+
+                } else {
+
+                    hoursSection.style.display =
+                        "none";
+                }
+
+
+                /* -----------------------------------------------------
+                   BOOK BUTTON
+                   ----------------------------------------------------- */
+
+                bookButton.addEventListener(
+                    "click",
+                    function () {
+
+                        if (bookButton.disabled) {
+                            return;
+                        }
+
+                        window.location.href =
+                            `booking.html?id=${encodeURIComponent(
+                                parkingId
+                            )}`;
+                    }
+                );
+
+
+                /* -----------------------------------------------------
+                   SHOW PAGE
+                   ----------------------------------------------------- */
+
+                loadingState.style.display =
+                    "none";
+
+                detailsCard.style.display =
+                    "block";
+
+
+            } catch (error) {
+
+                console.error(
+                    "Parking details error:",
+                    error
+                );
+
+                loadingState.style.display =
+                    "none";
+
+                errorState.style.display =
+                    "block";
+
+                errorMessage.textContent =
+                    error.message ||
+                    "Unable to load parking details.";
+            }
+
+        })();
+    </script>
 
 </body>
 </html>
